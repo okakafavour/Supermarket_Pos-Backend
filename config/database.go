@@ -9,6 +9,7 @@ import (
 	"github.com/okakafavour/supermarket-pos-backend/internal/inventory"
 	"github.com/okakafavour/supermarket-pos-backend/internal/payment"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
+	"github.com/okakafavour/supermarket-pos-backend/internal/purchase"
 	"github.com/okakafavour/supermarket-pos-backend/internal/sale"
 	"github.com/okakafavour/supermarket-pos-backend/internal/supplier"
 	"github.com/okakafavour/supermarket-pos-backend/internal/user"
@@ -44,6 +45,8 @@ func ConnectDatabase() *gorm.DB {
 		&sale.SaleItem{},
 		&inventory.InventoryLog{},
 		&payment.Payment{},
+		&purchase.Purchase{},
+		&purchase.PurchaseItem{},
 	)
 
 	if err != nil {
