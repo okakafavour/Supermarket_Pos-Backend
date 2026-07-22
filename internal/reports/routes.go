@@ -27,5 +27,29 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 			middleware.RequireRole("admin", "manager"),
 			handler.GetDailySalesReport,
 		)
+
+		reports.GET(
+			"/sales/monthly",
+			middleware.RequireRole("admin", "manager"),
+			handler.GetMonthlySalesReport,
+		)
+
+		reports.GET(
+			"/sales/range",
+			middleware.RequireRole("admin", "manager"),
+			handler.GetDateRangeReport,
+		)
+
+		reports.GET(
+			"/top-products",
+			middleware.RequireRole("admin", "manager"),
+			handler.GetTopSellingProducts,
+		)
+
+		reports.GET(
+			"/low-stock",
+			middleware.RequireRole("admin", "manager"),
+			handler.GetLowStockReport,
+		)
 	}
 }
