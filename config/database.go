@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/okakafavour/supermarket-pos-backend/internal/category"
 	"github.com/okakafavour/supermarket-pos-backend/internal/customer"
@@ -10,6 +11,7 @@ import (
 	"github.com/okakafavour/supermarket-pos-backend/internal/payment"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
 	"github.com/okakafavour/supermarket-pos-backend/internal/purchase"
+	"github.com/okakafavour/supermarket-pos-backend/internal/returns"
 	"github.com/okakafavour/supermarket-pos-backend/internal/sale"
 	"github.com/okakafavour/supermarket-pos-backend/internal/supplier"
 	"github.com/okakafavour/supermarket-pos-backend/internal/user"
@@ -20,22 +22,33 @@ import (
 )
 
 func ConnectDatabase() *gorm.DB {
+
 	dsn := os.Getenv("DATABASE_URL")
 
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  dsn,
-		PreferSimpleProtocol: true,
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+	if dsn == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
 	})
 
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
 	log.Println("Database connected successfully")
 
-	err = db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&user.User{},
 		&category.Category{},
 		&supplier.Supplier{},
@@ -47,9 +60,9 @@ func ConnectDatabase() *gorm.DB {
 		&payment.Payment{},
 		&purchase.Purchase{},
 		&purchase.PurchaseItem{},
-	)
-
-	if err != nil {
+		&returns.Return{},
+		&returns.ReturnItem{},
+	); err != nil {
 		log.Fatal("Migration failed:", err)
 	}
 

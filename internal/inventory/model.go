@@ -12,6 +12,7 @@ const (
 	StockIn    MovementType = "stock_in"
 	Restock    MovementType = "restock"
 	Sale       MovementType = "sale"
+	Return     MovementType = "return"
 	Adjustment MovementType = "adjustment"
 )
 
