@@ -71,9 +71,29 @@ func (r *Repository) Restore(id string) error {
 
 // Permanently Delete Sale
 func (r *Repository) PermanentDelete(id string) error {
-	return r.db.
+
+	tx := r.db.Begin()
+
+	// Delete sale items first
+	if err := tx.
 		Unscoped().
-		Delete(&Sale{}, "id = ?", id).Error
+		Where("sale_id = ?", id).
+		Delete(&SaleItem{}).Error; err != nil {
+
+		tx.Rollback()
+		return err
+	}
+
+	// Delete the sale
+	if err := tx.
+		Unscoped().
+		Delete(&Sale{}, "id = ?", id).Error; err != nil {
+
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 // Get Deleted Sales

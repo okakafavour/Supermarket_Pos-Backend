@@ -31,7 +31,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	userID := c.GetString("userID")
 
-	sale, err := h.service.Create(req, userID)
+	sale, warning, err := h.service.Create(req, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -40,10 +40,16 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
+	response := gin.H{
 		"success": true,
 		"data":    sale,
-	})
+	}
+
+	if warning != "" {
+		response["warning"] = warning
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // Get All Sales

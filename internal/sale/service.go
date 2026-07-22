@@ -29,14 +29,24 @@ func NewService(
 	}
 }
 
-func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, error) {
+func generateInvoiceNumber() string {
+	now := time.Now()
+
+	return fmt.Sprintf(
+		"INV-%s-%04d",
+		now.Format("20060102"),
+		now.Unix()%10000,
+	)
+}
+
+func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, error) {
 
 	if len(req.Items) == 0 {
-		return nil, errors.New("sale must contain at least one item")
+		return nil, "", errors.New("sale must contain at least one item")
 	}
 
 	sale := &Sale{
-		InvoiceNumber: fmt.Sprintf("INV-%d", time.Now().Unix()),
+		InvoiceNumber: generateInvoiceNumber(),
 		CustomerName:  req.CustomerName,
 		Discount:      req.Discount,
 		Tax:           req.Tax,
@@ -44,28 +54,27 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, error) {
 		SoldBy:        userID,
 	}
 
-	var total float64
+	var (
+		total   float64
+		warning string
+	)
 
 	for _, item := range req.Items {
 
-		// Get product
 		productData, err := s.productRepo.GetByID(item.ProductID.String())
 		if err != nil {
-			return nil, errors.New("product not found")
+			return nil, "", errors.New("product not found")
 		}
 
-		// Check stock
 		if productData.Quantity < item.Quantity {
-			return nil, fmt.Errorf(
+			return nil, "", fmt.Errorf(
 				"not enough stock for %s",
 				productData.Name,
 			)
 		}
 
-		// Calculate subtotal
 		subtotal := float64(item.Quantity) * productData.SellingPrice
 
-		// Add sale item
 		sale.Items = append(sale.Items, SaleItem{
 			ProductID: productData.ID,
 			Quantity:  item.Quantity,
@@ -75,22 +84,26 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, error) {
 
 		total += subtotal
 
-		// Stock movement
 		previousStock := productData.Quantity
 		newStock := previousStock - item.Quantity
 
-		// Update only quantity
 		if err := s.productRepo.UpdateQuantity(
 			productData.ID.String(),
 			newStock,
 		); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
-		// Keep local object updated
 		productData.Quantity = newStock
 
-		// Create inventory log
+		if newStock <= productData.MinimumStock {
+			warning = fmt.Sprintf(
+				"%s is below minimum stock (%d left)",
+				productData.Name,
+				newStock,
+			)
+		}
+
 		log := &inventory.InventoryLog{
 			ProductID:     productData.ID,
 			MovementType:  inventory.Sale,
@@ -102,20 +115,22 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, error) {
 		}
 
 		if err := s.inventoryRepo.CreateLog(log); err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 
-	// Calculate final total
 	sale.TotalAmount = total - sale.Discount + sale.Tax
 
-	// Save sale
 	if err := s.repo.Create(sale); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	// Return sale with items
-	return s.repo.GetByID(sale.ID.String())
+	createdSale, err := s.repo.GetByID(sale.ID.String())
+	if err != nil {
+		return nil, "", err
+	}
+
+	return createdSale, warning, nil
 }
 
 func (s *Service) GetAll() ([]Sale, error) {
@@ -142,7 +157,6 @@ func (s *Service) GetDeleted() ([]Sale, error) {
 	return s.repo.GetDeleted()
 }
 
-// Optional helper
 func parseUUID(id string) (uuid.UUID, error) {
 	return uuid.Parse(id)
 }
