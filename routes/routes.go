@@ -13,6 +13,7 @@ import (
 	"github.com/okakafavour/supermarket-pos-backend/internal/middleware"
 	"github.com/okakafavour/supermarket-pos-backend/internal/payment"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
+	"github.com/okakafavour/supermarket-pos-backend/internal/reports"
 	"github.com/okakafavour/supermarket-pos-backend/internal/sale"
 	"github.com/okakafavour/supermarket-pos-backend/internal/supplier"
 )
@@ -48,4 +49,5 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	sale.RegisterRoutes(api, db)
 	payment.RegisterRoutes(api, db)
 	dashboard.RegisterRoutes(api, db)
+	reports.RegisterRoutes(api, db)
 }
