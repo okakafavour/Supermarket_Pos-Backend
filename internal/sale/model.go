@@ -5,12 +5,15 @@ import (
 )
 
 type PaymentMethod string
+type SaleStatus string
 
 const (
 	Cash        PaymentMethod = "cash"
 	Card        PaymentMethod = "card"
 	Transfer    PaymentMethod = "transfer"
 	MobileMoney PaymentMethod = "mobile_money"
+	SalePending SaleStatus    = "pending"
+	SalePaid    SaleStatus    = "paid"
 )
 
 type Sale struct {
@@ -19,6 +22,8 @@ type Sale struct {
 	InvoiceNumber string `gorm:"size:50;uniqueIndex;not null"`
 
 	CustomerName string `gorm:"size:150"`
+
+	Status SaleStatus `gorm:"type:varchar(20);default:'pending'"`
 
 	TotalAmount float64 `gorm:"not null"`
 	Discount    float64 `gorm:"default:0"`

@@ -1,29 +1,45 @@
 package payment
 
 import (
-	"github.com/google/uuid"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/okakafavour/supermarket-pos-backend/internal/common"
+	"github.com/okakafavour/supermarket-pos-backend/internal/sale"
 )
 
-type Status string
+type PaymentMethod string
 
 const (
-	Successful Status = "successful"
-	Failed     Status = "failed"
-	Pending    Status = "pending"
+	Cash        PaymentMethod = "cash"
+	Card        PaymentMethod = "card"
+	Transfer    PaymentMethod = "transfer"
+	MobileMoney PaymentMethod = "mobile_money"
+)
+
+type PaymentStatus string
+
+const (
+	Pending  PaymentStatus = "pending"
+	Paid     PaymentStatus = "paid"
+	Failed   PaymentStatus = "failed"
+	Refunded PaymentStatus = "refunded"
 )
 
 type Payment struct {
 	common.BaseModel
 
-	SaleID uuid.UUID
+	SaleID uuid.UUID `gorm:"not null"`
 
-	Method string
+	Sale sale.Sale `gorm:"foreignKey:SaleID"`
 
-	Amount int64
+	Amount float64 `gorm:"not null"`
 
-	Reference string
+	Method PaymentMethod `gorm:"type:varchar(30);not null"`
 
-	Status Status `gorm:"type:varchar(20)"`
+	Status PaymentStatus `gorm:"type:varchar(30);default:'paid'"`
+
+	Reference string `gorm:"size:100"`
+
+	PaidAt time.Time
 }
