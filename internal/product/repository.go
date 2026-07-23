@@ -43,7 +43,23 @@ func (r *Repository) GetByID(id string) (*Product, error) {
 }
 
 func (r *Repository) Update(product *Product) error {
-	return r.db.Save(product).Error
+	return r.db.
+		Model(&Product{}).
+		Where("id = ?", product.ID).
+		Updates(map[string]interface{}{
+			"name":          product.Name,
+			"description":   product.Description,
+			"sku":           product.SKU,
+			"barcode":       product.Barcode,
+			"category_id":   product.CategoryID,
+			"supplier_id":   product.SupplierID,
+			"cost_price":    product.CostPrice,
+			"selling_price": product.SellingPrice,
+			"quantity":      product.Quantity,
+			"minimum_stock": product.MinimumStock,
+			"image_url":     product.ImageURL,
+			"is_active":     product.IsActive,
+		}).Error
 }
 
 func (r *Repository) Delete(id string) error {
