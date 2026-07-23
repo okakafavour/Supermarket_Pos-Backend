@@ -29,7 +29,10 @@ func ConnectDatabase() *gorm.DB {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
 	})
 
@@ -44,6 +47,7 @@ func ConnectDatabase() *gorm.DB {
 
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	log.Println("Database connected successfully")
