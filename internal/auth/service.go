@@ -21,7 +21,6 @@ func NewService(repo *Repository) *Service {
 
 func (s *Service) Register(req RegisterRequest) error {
 
-	// Check if user already exists
 	existingUser, err := s.repo.GetUserByEmail(req.Email)
 
 	if err == nil && existingUser != nil {
@@ -32,10 +31,15 @@ func (s *Service) Register(req RegisterRequest) error {
 		return err
 	}
 
-	// Hash password
 	hashedPassword, err := helpers.HashPassword(req.Password)
 	if err != nil {
 		return err
+	}
+
+	role := req.Role
+
+	if role == "" {
+		role = user.Cashier
 	}
 
 	newUser := user.User{
@@ -44,35 +48,37 @@ func (s *Service) Register(req RegisterRequest) error {
 		Email:     req.Email,
 		Phone:     req.Phone,
 		Password:  hashedPassword,
-		Role:      "admin", // We'll improve this later
+		Role:      role,
 		IsActive:  true,
 	}
 
 	return s.repo.CreateUser(&newUser)
 }
 
-func (s *Service) Login(req LoginRequest) (string, error) {
+func (s *Service) Login(req LoginRequest) (*LoginResponse, error) {
 
 	user, err := s.repo.GetUserByEmail(req.Email)
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	err = helpers.CheckPassword(req.Password, user.Password)
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return nil, errors.New("invalid email or password")
 	}
 
 	token, err := jwtutil.GenerateToken(
 		user.ID.String(),
 		string(user.Role),
 	)
-
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return token, nil
+	return &LoginResponse{
+		Token: token,
+		User:  user,
+	}, nil
 }
 
 func (s *Service) Profile(userID string) (*user.User, error) {

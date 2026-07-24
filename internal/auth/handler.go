@@ -59,7 +59,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.service.Login(req)
+	login, err := h.service.Login(req)
 
 	if err != nil {
 
@@ -72,7 +72,15 @@ func (h *Handler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"token":   token,
+		"token":   login.Token,
+		"user": gin.H{
+			"id":         login.User.ID,
+			"first_name": login.User.FirstName,
+			"last_name":  login.User.LastName,
+			"email":      login.User.Email,
+			"role":       login.User.Role,
+			"is_active":  login.User.IsActive,
+		},
 	})
 }
 
