@@ -72,6 +72,15 @@ func (s *Service) UpdateUser(id string, req UpdateUserRequest) error {
 }
 
 func (s *Service) UpdateStatus(id string, req UpdateUserStatusRequest) error {
+
+	_, err := s.repo.GetUserByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("user not found")
+		}
+		return err
+	}
+
 	return s.repo.UpdateStatus(id, req.IsActive)
 }
 

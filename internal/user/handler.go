@@ -116,34 +116,30 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 
 func (h *Handler) UpdateStatus(c *gin.Context) {
 
-	currentUser := c.GetString("user_id")
-	targetUser := c.Param("id")
+	currentUserID := c.GetString("user_id")
+	targetUserID := c.Param("id")
 
-	if currentUser == targetUser {
-
+	if currentUserID == targetUserID {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": "You cannot disable your own account",
 		})
-
 		return
 	}
 
 	var req UpdateUserStatusRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
-
 		return
 	}
 
-	if err := h.service.UpdateStatus(targetUser, req); err != nil {
+	if err := h.service.UpdateStatus(targetUserID, req); err != nil {
 
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
