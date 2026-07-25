@@ -62,6 +62,11 @@ func (s *Service) Login(req LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("invalid email or password")
 	}
 
+	// Prevent disabled users from logging in
+	if !user.IsActive {
+		return nil, errors.New("your account has been disabled. Please contact an administrator")
+	}
+
 	err = helpers.CheckPassword(req.Password, user.Password)
 	if err != nil {
 		return nil, errors.New("invalid email or password")
