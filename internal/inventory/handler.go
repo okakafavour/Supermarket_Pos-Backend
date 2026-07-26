@@ -80,29 +80,25 @@ func (h *Handler) Adjust(c *gin.Context) {
 // GET /inventory/logs
 func (h *Handler) GetLogs(c *gin.Context) {
 
-	page := 1
-	limit := 20
-
-	if p := c.Query("page"); p != "" {
-		fmt.Sscanf(p, "%d", &page)
+	filter := InventoryLogFilter{
+		Page:      1,
+		Limit:     20,
+		Search:    c.Query("search"),
+		Movement:  c.Query("movement"),
+		Reason:    c.Query("reason"),
+		StartDate: c.Query("start_date"),
+		EndDate:   c.Query("end_date"),
 	}
 
-	if l := c.Query("limit"); l != "" {
-		fmt.Sscanf(l, "%d", &limit)
+	if page := c.Query("page"); page != "" {
+		fmt.Sscanf(page, "%d", &filter.Page)
 	}
 
-	search := c.Query("search")
-	movement := c.Query("movement")
-	reason := c.Query("reason")
+	if limit := c.Query("limit"); limit != "" {
+		fmt.Sscanf(limit, "%d", &filter.Limit)
+	}
 
-	logs, err := h.service.GetLogs(
-		page,
-		limit,
-		search,
-		movement,
-		reason,
-	)
-
+	logs, err := h.service.GetLogs(filter)
 	if err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -176,5 +172,23 @@ func (h *Handler) GetInventoryAnalytics(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    analytics,
+	})
+}
+
+// GET /inventory/export/csv
+func (h *Handler) ExportCSV(c *gin.Context) {
+
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"success": false,
+		"message": "CSV export not implemented yet",
+	})
+}
+
+// GET /inventory/export/pdf
+func (h *Handler) ExportPDF(c *gin.Context) {
+
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"success": false,
+		"message": "PDF export not implemented yet",
 	})
 }

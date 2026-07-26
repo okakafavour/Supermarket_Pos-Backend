@@ -152,6 +152,8 @@ func (r *Repository) GetAllLogs(
 	search string,
 	movement string,
 	reason string,
+	startDate string,
+	endDate string,
 ) (*PaginatedInventoryLogs, error) {
 
 	var logs []InventoryLog
@@ -163,6 +165,10 @@ func (r *Repository) GetAllLogs(
 		Preload("Product.Category").
 		Preload("Product.Supplier")
 
+	// ===================================
+	// Filters
+	// ===================================
+
 	if movement != "" {
 		query = query.Where("movement_type = ?", movement)
 	}
@@ -171,30 +177,50 @@ func (r *Repository) GetAllLogs(
 		query = query.Where("reason = ?", reason)
 	}
 
-	if search != "" {
-		query = query.Joins(
-			"JOIN products ON products.id = inventory_logs.product_id",
-		).Where(
-			"products.name ILIKE ?",
-			"%"+search+"%",
-		)
+	if startDate != "" {
+		query = query.Where("created_at >= ?", startDate)
 	}
 
-	query.Count(&total)
+	if endDate != "" {
+		query = query.Where("created_at <= ?", endDate)
+	}
 
-	offset := (page - 1) * limit
+	if search != "" {
 
-	err := query.
-		Order("created_at DESC").
-		Limit(limit).
-		Offset(offset).
-		Find(&logs).Error
+		query = query.
+			Joins(
+				"JOIN products ON products.id = inventory_logs.product_id",
+			).
+			Where(
+				`products.name ILIKE ?
+				OR inventory_logs.created_by ILIKE ?
+				OR inventory_logs.reference ILIKE ?`,
+				"%"+search+"%",
+				"%"+search+"%",
+				"%"+search+"%",
+			)
+	}
 
-	if err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, err
 	}
 
-	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	offset := (page - 1) * limit
+
+	if err := query.
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&logs).Error; err != nil {
+
+		return nil, err
+	}
+
+	totalPages := 0
+
+	if limit > 0 {
+		totalPages = int((total + int64(limit) - 1) / int64(limit))
+	}
 
 	return &PaginatedInventoryLogs{
 		Data:       logs,
@@ -226,9 +252,9 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 		WeeklyMovement: []StockMovementChart{},
 	}
 
-	// ======================================
-	// Total Inventory Value & Low Stock
-	// ======================================
+	// =====================================
+	// Products
+	// =====================================
 
 	var products []product.Product
 
@@ -236,11 +262,11 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 		return nil, err
 	}
 
-	var total float64
+	totalValue := 0.0
 
 	for _, p := range products {
 
-		total += float64(p.Quantity) * p.CostPrice
+		totalValue += float64(p.Quantity) * p.CostPrice
 
 		if p.Quantity <= p.MinimumStock {
 
@@ -254,21 +280,71 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 		}
 	}
 
-	analytics.TotalInventoryValue = total
+	analytics.TotalInventoryValue = totalValue
 
-	// ======================================
-	// Weekly Stock Movement
-	// ======================================
+	// =====================================
+	// Fast / Slow Moving Products
+	// =====================================
+
+	type Result struct {
+		ProductID uuid.UUID
+		Name      string
+		Total     int
+	}
+
+	var movement []Result
+
+	r.db.
+		Table("inventory_logs").
+		Select(`
+			products.id AS product_id,
+			products.name,
+			SUM(ABS(inventory_logs.quantity)) AS total
+		`).
+		Joins("JOIN products ON products.id = inventory_logs.product_id").
+		Group("products.id, products.name").
+		Order("total DESC").
+		Scan(&movement)
+
+	for i, item := range movement {
+
+		pm := ProductMovement{
+			Product:  item.Name,
+			Quantity: item.Total,
+		}
+
+		if i < 5 {
+			analytics.FastMoving = append(
+				analytics.FastMoving,
+				pm,
+			)
+		}
+	}
+
+	for i := len(movement) - 1; i >= 0 && len(analytics.SlowMoving) < 5; i-- {
+
+		analytics.SlowMoving = append(
+			analytics.SlowMoving,
+			ProductMovement{
+				Product:  movement[i].Name,
+				Quantity: movement[i].Total,
+			},
+		)
+	}
+
+	// =====================================
+	// Weekly Movement
+	// =====================================
 
 	var logs []InventoryLog
 
 	if err := r.db.
 		Order("created_at ASC").
 		Find(&logs).Error; err != nil {
+
 		return nil, err
 	}
 
-	// Always create all days
 	days := map[string]*StockMovementChart{
 		"Mon": {Day: "Mon"},
 		"Tue": {Day: "Tue"},
@@ -283,34 +359,33 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 
 		day := log.CreatedAt.Format("Mon")
 
-		movement := days[day]
+		entry := days[day]
 
 		switch log.MovementType {
 
 		case Restock, StockIn, Return:
 
-			quantity := log.Quantity
+			qty := log.Quantity
 
-			if quantity < 0 {
-				quantity = -quantity
+			if qty < 0 {
+				qty = -qty
 			}
 
-			movement.StockIn += quantity
+			entry.StockIn += qty
 
 		case Sale:
 
-			quantity := log.Quantity
+			qty := log.Quantity
 
-			if quantity < 0 {
-				quantity = -quantity
+			if qty < 0 {
+				qty = -qty
 			}
 
-			movement.StockOut += quantity
-
+			entry.StockOut += qty
 		}
 	}
 
-	orderedDays := []string{
+	order := []string{
 		"Mon",
 		"Tue",
 		"Wed",
@@ -320,7 +395,7 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 		"Sun",
 	}
 
-	for _, day := range orderedDays {
+	for _, day := range order {
 
 		analytics.WeeklyMovement = append(
 			analytics.WeeklyMovement,

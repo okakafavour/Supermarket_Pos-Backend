@@ -31,10 +31,10 @@ const (
 type InventoryLog struct {
 	common.BaseModel
 
-	ProductID uuid.UUID
+	ProductID uuid.UUID       `gorm:"type:uuid;index"`
 	Product   product.Product `gorm:"foreignKey:ProductID"`
 
-	MovementType MovementType `gorm:"type:varchar(20)"`
+	MovementType MovementType `gorm:"type:varchar(20);index"`
 
 	Quantity int
 
@@ -42,22 +42,51 @@ type InventoryLog struct {
 
 	NewStock int
 
-	Reason InventoryReason `gorm:"type:varchar(30)"`
+	Reason InventoryReason `gorm:"type:varchar(30);index"`
 
+	// Invoice Number, Purchase Number, Sale Number etc.
 	Reference string `gorm:"size:100"`
 
-	CreatedBy string
+	// User that performed the action
+	CreatedBy string `gorm:"size:100"`
+
+	// Optional note
+	Remarks string `gorm:"type:text"`
+}
+
+type InventorySummary struct {
+	TotalProducts int `json:"total_products"`
+	InStock       int `json:"in_stock"`
+	LowStock      int `json:"low_stock"`
+	OutOfStock    int `json:"out_of_stock"`
+
+	TotalStockValue float64 `json:"total_stock_value"`
+}
+
+type PaginatedInventoryLogs struct {
+	Data []InventoryLog `json:"data"`
+
+	Page int `json:"page"`
+
+	Limit int `json:"limit"`
+
+	Total int64 `json:"total"`
+
+	TotalPages int `json:"total_pages"`
 }
 
 type StockMovementChart struct {
-	Day      string `json:"day"`
-	StockIn  int    `json:"stock_in"`
-	StockOut int    `json:"stock_out"`
+	Day string `json:"day"`
+
+	StockIn int `json:"stock_in"`
+
+	StockOut int `json:"stock_out"`
 }
 
 type ProductMovement struct {
-	Product  string `json:"product"`
-	Quantity int    `json:"quantity"`
+	Product string `json:"product"`
+
+	Quantity int `json:"quantity"`
 }
 
 type InventoryAnalytics struct {
@@ -70,4 +99,20 @@ type InventoryAnalytics struct {
 	LowStock []ProductMovement `json:"low_stock"`
 
 	WeeklyMovement []StockMovementChart `json:"weekly_movement"`
+}
+
+type InventoryLogFilter struct {
+	Page int
+
+	Limit int
+
+	Search string
+
+	Movement string
+
+	Reason string
+
+	StartDate string
+
+	EndDate string
 }

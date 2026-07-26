@@ -37,7 +37,7 @@ func (s *Service) Restock(req RestockRequest, createdBy string) (*InventoryLog, 
 
 	log := &InventoryLog{
 		ProductID:     product.ID,
-		MovementType:  Restock,
+		MovementType:  Adjustment,
 		Quantity:      req.Quantity,
 		PreviousStock: previousStock,
 		NewStock:      newStock,
@@ -93,19 +93,17 @@ func (s *Service) Adjust(req AdjustmentRequest, createdBy string) (*InventoryLog
 
 // Get every inventory log
 func (s *Service) GetLogs(
-	page int,
-	limit int,
-	search string,
-	movement string,
-	reason string,
+	filter InventoryLogFilter,
 ) (*PaginatedInventoryLogs, error) {
 
 	return s.repo.GetAllLogs(
-		page,
-		limit,
-		search,
-		movement,
-		reason,
+		filter.Page,
+		filter.Limit,
+		filter.Search,
+		filter.Movement,
+		filter.Reason,
+		filter.StartDate,
+		filter.EndDate,
 	)
 }
 
