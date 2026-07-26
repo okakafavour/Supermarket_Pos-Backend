@@ -16,6 +16,10 @@ func NewHandler(service *Service) *Handler {
 	}
 }
 
+// ==========================================
+// CREATE SUPPLIER
+// ==========================================
+
 func (h *Handler) Create(c *gin.Context) {
 
 	var req CreateSupplierRequest
@@ -26,16 +30,19 @@ func (h *Handler) Create(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
 	supplier, err := h.service.Create(req)
+
 	if err != nil {
 
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -45,9 +52,25 @@ func (h *Handler) Create(c *gin.Context) {
 	})
 }
 
+// ==========================================
+// GET ALL SUPPLIERS
+// ==========================================
+
 func (h *Handler) GetAll(c *gin.Context) {
 
-	suppliers, err := h.service.GetAll()
+	var filter SupplierFilter
+
+	if err := c.ShouldBindQuery(&filter); err != nil {
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	result, err := h.service.GetAll(filter)
 
 	if err != nil {
 
@@ -55,14 +78,19 @@ func (h *Handler) GetAll(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    suppliers,
+		"data":    result,
 	})
 }
+
+// ==========================================
+// GET SUPPLIER BY ID
+// ==========================================
 
 func (h *Handler) GetByID(c *gin.Context) {
 
@@ -76,6 +104,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 			"success": false,
 			"message": "Supplier not found",
 		})
+
 		return
 	}
 
@@ -84,6 +113,10 @@ func (h *Handler) GetByID(c *gin.Context) {
 		"data":    supplier,
 	})
 }
+
+// ==========================================
+// UPDATE SUPPLIER
+// ==========================================
 
 func (h *Handler) Update(c *gin.Context) {
 
@@ -97,6 +130,7 @@ func (h *Handler) Update(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -108,6 +142,7 @@ func (h *Handler) Update(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -117,18 +152,21 @@ func (h *Handler) Update(c *gin.Context) {
 	})
 }
 
+// ==========================================
+// DELETE SUPPLIER
+// ==========================================
+
 func (h *Handler) Delete(c *gin.Context) {
 
 	id := c.Param("id")
 
-	err := h.service.Delete(id)
-
-	if err != nil {
+	if err := h.service.Delete(id); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -138,18 +176,21 @@ func (h *Handler) Delete(c *gin.Context) {
 	})
 }
 
+// ==========================================
+// RESTORE SUPPLIER
+// ==========================================
+
 func (h *Handler) Restore(c *gin.Context) {
 
 	id := c.Param("id")
 
-	err := h.service.Restore(id)
-
-	if err != nil {
+	if err := h.service.Restore(id); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -159,18 +200,21 @@ func (h *Handler) Restore(c *gin.Context) {
 	})
 }
 
+// ==========================================
+// PERMANENT DELETE
+// ==========================================
+
 func (h *Handler) PermanentDelete(c *gin.Context) {
 
 	id := c.Param("id")
 
-	err := h.service.PermanentDelete(id)
-
-	if err != nil {
+	if err := h.service.PermanentDelete(id); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -179,6 +223,10 @@ func (h *Handler) PermanentDelete(c *gin.Context) {
 		"message": "Supplier permanently deleted",
 	})
 }
+
+// ==========================================
+// GET DELETED SUPPLIERS
+// ==========================================
 
 func (h *Handler) GetDeleted(c *gin.Context) {
 
@@ -190,6 +238,7 @@ func (h *Handler) GetDeleted(c *gin.Context) {
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 

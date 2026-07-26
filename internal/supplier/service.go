@@ -16,6 +16,10 @@ func NewService(repo *Repository) *Service {
 	}
 }
 
+// ==========================================
+// CREATE
+// ==========================================
+
 func (s *Service) Create(req CreateSupplierRequest) (*Supplier, error) {
 
 	existing, err := s.repo.GetByEmail(req.Email)
@@ -40,21 +44,55 @@ func (s *Service) Create(req CreateSupplierRequest) (*Supplier, error) {
 		IsActive:      true,
 	}
 
-	err = s.repo.Create(supplier)
-	if err != nil {
+	if err := s.repo.Create(supplier); err != nil {
 		return nil, err
 	}
 
 	return supplier, nil
 }
 
-func (s *Service) GetAll() ([]Supplier, error) {
-	return s.repo.GetAll()
+// ==========================================
+// GET ALL (Paginated)
+// ==========================================
+
+func (s *Service) GetAll(filter SupplierFilter) (*PaginatedSuppliers, error) {
+
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+
+	if filter.Limit <= 0 {
+		filter.Limit = 10
+	}
+
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+
+	if filter.Sort == "" {
+		filter.Sort = "created_at"
+	}
+
+	return s.repo.GetAll(
+		filter.Page,
+		filter.Limit,
+		filter.Search,
+		filter.Status,
+		filter.Sort,
+	)
 }
+
+// ==========================================
+// GET BY ID
+// ==========================================
 
 func (s *Service) GetByID(id string) (*Supplier, error) {
 	return s.repo.GetByID(id)
 }
+
+// ==========================================
+// UPDATE
+// ==========================================
 
 func (s *Service) Update(id string, req UpdateSupplierRequest) (*Supplier, error) {
 
@@ -97,25 +135,40 @@ func (s *Service) Update(id string, req UpdateSupplierRequest) (*Supplier, error
 
 	supplier.IsActive = req.IsActive
 
-	err = s.repo.Update(supplier)
-	if err != nil {
+	if err := s.repo.Update(supplier); err != nil {
 		return nil, err
 	}
 
 	return supplier, nil
 }
 
+// ==========================================
+// DELETE
+// ==========================================
+
 func (s *Service) Delete(id string) error {
 	return s.repo.Delete(id)
 }
+
+// ==========================================
+// RESTORE
+// ==========================================
 
 func (s *Service) Restore(id string) error {
 	return s.repo.Restore(id)
 }
 
+// ==========================================
+// PERMANENT DELETE
+// ==========================================
+
 func (s *Service) PermanentDelete(id string) error {
 	return s.repo.PermanentDelete(id)
 }
+
+// ==========================================
+// GET DELETED
+// ==========================================
 
 func (s *Service) GetDeleted() ([]Supplier, error) {
 	return s.repo.GetDeleted()

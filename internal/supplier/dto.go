@@ -22,3 +22,27 @@ type UpdateSupplierRequest struct {
 	Country       string `json:"country"`
 	IsActive      bool   `json:"is_active"`
 }
+
+// ==========================================
+// Supplier Filters
+// ==========================================
+
+type SupplierFilter struct {
+	Page   int    `form:"page"`
+	Limit  int    `form:"limit"`
+	Search string `form:"search"`
+	Status string `form:"status"`
+	Sort   string `form:"sort"`
+}
+
+// ==========================================
+// Paginated Response
+// ==========================================
+
+type PaginatedSuppliers struct {
+	Data       []Supplier `json:"data"`
+	Page       int        `json:"page"`
+	Limit      int        `json:"limit"`
+	Total      int64      `json:"total"`
+	TotalPages int        `json:"total_pages"`
+}
