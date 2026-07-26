@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -79,12 +80,36 @@ func (h *Handler) Adjust(c *gin.Context) {
 // GET /inventory/logs
 func (h *Handler) GetLogs(c *gin.Context) {
 
-	logs, err := h.service.GetLogs()
+	page := 1
+	limit := 20
+
+	if p := c.Query("page"); p != "" {
+		fmt.Sscanf(p, "%d", &page)
+	}
+
+	if l := c.Query("limit"); l != "" {
+		fmt.Sscanf(l, "%d", &limit)
+	}
+
+	search := c.Query("search")
+	movement := c.Query("movement")
+	reason := c.Query("reason")
+
+	logs, err := h.service.GetLogs(
+		page,
+		limit,
+		search,
+		movement,
+		reason,
+	)
+
 	if err != nil {
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -111,5 +136,25 @@ func (h *Handler) GetProductLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    logs,
+	})
+}
+
+func (h *Handler) Summary(c *gin.Context) {
+
+	summary, err := h.service.GetInventorySummary()
+
+	if err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    summary,
 	})
 }

@@ -21,21 +21,6 @@ func (r *Repository) CreateLog(log *InventoryLog) error {
 	return r.db.Create(log).Error
 }
 
-// Get all inventory logs
-func (r *Repository) GetAllLogs() ([]InventoryLog, error) {
-
-	var logs []InventoryLog
-
-	err := r.db.
-		Preload("Product").
-		Preload("Product.Category").
-		Preload("Product.Supplier").
-		Order("created_at DESC").
-		Find(&logs).Error
-
-	return logs, err
-}
-
 // Get logs for a specific product
 func (r *Repository) GetProductLogs(productID string) ([]InventoryLog, error) {
 
@@ -103,4 +88,131 @@ func (r *Repository) GetLogByID(id string) (*InventoryLog, error) {
 	}
 
 	return &log, nil
+}
+
+func (r *Repository) GetInventorySummary() (*InventorySummary, error) {
+
+	var summary InventorySummary
+
+	var totalProducts int64
+	var inStock int64
+	var lowStock int64
+	var outOfStock int64
+
+	// Total Products
+	r.db.
+		Model(&product.Product{}).
+		Count(&totalProducts)
+
+	// In Stock
+	r.db.
+		Model(&product.Product{}).
+		Where("quantity > minimum_stock").
+		Count(&inStock)
+
+	// Low Stock
+	r.db.
+		Model(&product.Product{}).
+		Where("quantity > 0 AND quantity <= minimum_stock").
+		Count(&lowStock)
+
+	// Out Of Stock
+	r.db.
+		Model(&product.Product{}).
+		Where("quantity = 0").
+		Count(&outOfStock)
+
+	summary.TotalProducts = int(totalProducts)
+	summary.InStock = int(inStock)
+	summary.LowStock = int(lowStock)
+	summary.OutOfStock = int(outOfStock)
+
+	// Calculate total inventory value
+	type Result struct {
+		Total float64
+	}
+
+	var result Result
+
+	if err := r.db.
+		Model(&product.Product{}).
+		Select("COALESCE(SUM(quantity * cost_price), 0) AS total").
+		Scan(&result).Error; err != nil {
+		return nil, err
+	}
+
+	summary.TotalStockValue = result.Total
+
+	return &summary, nil
+}
+
+func (r *Repository) GetAllLogs(
+	page int,
+	limit int,
+	search string,
+	movement string,
+	reason string,
+) (*PaginatedInventoryLogs, error) {
+
+	var logs []InventoryLog
+	var total int64
+
+	query := r.db.
+		Model(&InventoryLog{}).
+		Preload("Product").
+		Preload("Product.Category").
+		Preload("Product.Supplier")
+
+	if movement != "" {
+		query = query.Where("movement_type = ?", movement)
+	}
+
+	if reason != "" {
+		query = query.Where("reason = ?", reason)
+	}
+
+	if search != "" {
+		query = query.Joins(
+			"JOIN products ON products.id = inventory_logs.product_id",
+		).Where(
+			"products.name ILIKE ?",
+			"%"+search+"%",
+		)
+	}
+
+	query.Count(&total)
+
+	offset := (page - 1) * limit
+
+	err := query.
+		Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&logs).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+
+	return &PaginatedInventoryLogs{
+		Data:       logs,
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+	}, nil
+}
+
+func (r *Repository) Transaction(fn func(tx *Repository) error) error {
+
+	return r.db.Transaction(func(tx *gorm.DB) error {
+
+		repo := &Repository{
+			db: tx,
+		}
+
+		return fn(repo)
+	})
 }

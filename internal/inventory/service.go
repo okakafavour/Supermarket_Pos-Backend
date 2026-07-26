@@ -75,11 +75,12 @@ func (s *Service) Adjust(req AdjustmentRequest, createdBy string) (*InventoryLog
 
 	log := &InventoryLog{
 		ProductID:     product.ID,
-		MovementType:  Adjustment,
+		MovementType:  Restock,
 		Quantity:      req.Quantity,
 		PreviousStock: previousStock,
 		NewStock:      newStock,
 		Reason:        req.Reason,
+		Reference:     req.Reference,
 		CreatedBy:     createdBy,
 	}
 
@@ -91,11 +92,28 @@ func (s *Service) Adjust(req AdjustmentRequest, createdBy string) (*InventoryLog
 }
 
 // Get every inventory log
-func (s *Service) GetLogs() ([]InventoryLog, error) {
-	return s.repo.GetAllLogs()
+func (s *Service) GetLogs(
+	page int,
+	limit int,
+	search string,
+	movement string,
+	reason string,
+) (*PaginatedInventoryLogs, error) {
+
+	return s.repo.GetAllLogs(
+		page,
+		limit,
+		search,
+		movement,
+		reason,
+	)
 }
 
 // Get logs for a single product
 func (s *Service) GetProductLogs(productID string) ([]InventoryLog, error) {
 	return s.repo.GetProductLogs(productID)
+}
+
+func (s *Service) GetInventorySummary() (*InventorySummary, error) {
+	return s.repo.GetInventorySummary()
 }

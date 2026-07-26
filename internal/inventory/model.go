@@ -16,6 +16,18 @@ const (
 	Adjustment MovementType = "adjustment"
 )
 
+type InventoryReason string
+
+const (
+	PurchaseReason   InventoryReason = "purchase"
+	SaleReason       InventoryReason = "sale"
+	ReturnReason     InventoryReason = "return"
+	DamagedReason    InventoryReason = "damaged"
+	ExpiredReason    InventoryReason = "expired"
+	ManualReason     InventoryReason = "manual"
+	CorrectionReason InventoryReason = "correction"
+)
+
 type InventoryLog struct {
 	common.BaseModel
 
@@ -30,7 +42,9 @@ type InventoryLog struct {
 
 	NewStock int
 
-	Reason string
+	Reason InventoryReason `gorm:"type:varchar(30)"`
+
+	Reference string `gorm:"size:100"`
 
 	CreatedBy string
 }

@@ -17,26 +17,44 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	inventory.Use(middleware.AuthMiddleware())
 
 	{
-		// Admin & Manager can restock
+		// ==========================
+		// Inventory Summary
+		// ==========================
+
+		inventory.GET(
+			"/summary",
+			handler.Summary,
+		)
+
+		// ==========================
+		// Stock Management
+		// ==========================
+
+		// Admin & Manager can restock inventory
 		inventory.POST(
 			"/restock",
 			middleware.RequireRole("admin", "manager"),
 			handler.Restock,
 		)
 
-		// Admin & Manager can adjust stock
+		// Admin & Manager can adjust inventory
 		inventory.POST(
 			"/adjust",
 			middleware.RequireRole("admin", "manager"),
 			handler.Adjust,
 		)
 
-		// All authenticated users can view logs
+		// ==========================
+		// Inventory Logs
+		// ==========================
+
+		// View all inventory logs
 		inventory.GET(
 			"/logs",
 			handler.GetLogs,
 		)
 
+		// View logs for a specific product
 		inventory.GET(
 			"/product/:id",
 			handler.GetProductLogs,
