@@ -158,3 +158,23 @@ func (h *Handler) Summary(c *gin.Context) {
 		"data":    summary,
 	})
 }
+
+// GET /inventory/analytics
+func (h *Handler) GetInventoryAnalytics(c *gin.Context) {
+
+	analytics, err := h.service.GetInventoryAnalytics()
+	if err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    analytics,
+	})
+}

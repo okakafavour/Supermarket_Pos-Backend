@@ -18,12 +18,19 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 
 	{
 		// ==========================
-		// Inventory Summary
+		// Inventory Dashboard
 		// ==========================
 
+		// Inventory summary cards
 		inventory.GET(
 			"/summary",
 			handler.Summary,
+		)
+
+		// Inventory analytics dashboard
+		inventory.GET(
+			"/analytics",
+			handler.GetInventoryAnalytics,
 		)
 
 		// ==========================

@@ -216,3 +216,87 @@ func (r *Repository) Transaction(fn func(tx *Repository) error) error {
 		return fn(repo)
 	})
 }
+
+func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
+
+	analytics := &InventoryAnalytics{}
+
+	// ============================
+	// Total Inventory Value
+	// ============================
+
+	var products []product.Product
+
+	if err := r.db.Find(&products).Error; err != nil {
+		return nil, err
+	}
+
+	var total float64
+
+	for _, p := range products {
+
+		total += float64(p.Quantity) * p.CostPrice
+
+		if p.Quantity <= p.MinimumStock {
+
+			analytics.LowStock = append(
+				analytics.LowStock,
+				ProductMovement{
+					Product:  p.Name,
+					Quantity: p.Quantity,
+				},
+			)
+		}
+	}
+
+	analytics.TotalInventoryValue = total
+
+	// ============================
+	// Weekly Stock Movement
+	// ============================
+
+	var logs []InventoryLog
+
+	r.db.
+		Order("created_at ASC").
+		Find(&logs)
+
+	days := map[string]*StockMovementChart{}
+
+	for _, log := range logs {
+
+		day := log.CreatedAt.Format("Mon")
+
+		if _, ok := days[day]; !ok {
+
+			days[day] = &StockMovementChart{
+				Day: day,
+			}
+
+		}
+
+		switch log.MovementType {
+
+		case Restock, StockIn, Return:
+
+			days[day].StockIn += log.Quantity
+
+		case Sale:
+
+			days[day].StockOut += log.Quantity
+
+		}
+	}
+
+	for _, value := range days {
+
+		analytics.WeeklyMovement =
+			append(
+				analytics.WeeklyMovement,
+				*value,
+			)
+
+	}
+
+	return analytics, nil
+}

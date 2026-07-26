@@ -117,3 +117,8 @@ func (s *Service) GetProductLogs(productID string) ([]InventoryLog, error) {
 func (s *Service) GetInventorySummary() (*InventorySummary, error) {
 	return s.repo.GetInventorySummary()
 }
+
+// Get inventory analytics
+func (s *Service) GetInventoryAnalytics() (*InventoryAnalytics, error) {
+	return s.repo.GetInventoryAnalytics()
+}

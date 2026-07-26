@@ -48,3 +48,26 @@ type InventoryLog struct {
 
 	CreatedBy string
 }
+
+type StockMovementChart struct {
+	Day      string `json:"day"`
+	StockIn  int    `json:"stock_in"`
+	StockOut int    `json:"stock_out"`
+}
+
+type ProductMovement struct {
+	Product  string `json:"product"`
+	Quantity int    `json:"quantity"`
+}
+
+type InventoryAnalytics struct {
+	TotalInventoryValue float64 `json:"total_inventory_value"`
+
+	FastMoving []ProductMovement `json:"fast_moving"`
+
+	SlowMoving []ProductMovement `json:"slow_moving"`
+
+	LowStock []ProductMovement `json:"low_stock"`
+
+	WeeklyMovement []StockMovementChart `json:"weekly_movement"`
+}
