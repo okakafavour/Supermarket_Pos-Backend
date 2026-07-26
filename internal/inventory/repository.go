@@ -219,11 +219,16 @@ func (r *Repository) Transaction(fn func(tx *Repository) error) error {
 
 func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 
-	analytics := &InventoryAnalytics{}
+	analytics := &InventoryAnalytics{
+		FastMoving:     []ProductMovement{},
+		SlowMoving:     []ProductMovement{},
+		LowStock:       []ProductMovement{},
+		WeeklyMovement: []StockMovementChart{},
+	}
 
-	// ============================
-	// Total Inventory Value
-	// ============================
+	// ======================================
+	// Total Inventory Value & Low Stock
+	// ======================================
 
 	var products []product.Product
 
@@ -251,51 +256,76 @@ func (r *Repository) GetInventoryAnalytics() (*InventoryAnalytics, error) {
 
 	analytics.TotalInventoryValue = total
 
-	// ============================
+	// ======================================
 	// Weekly Stock Movement
-	// ============================
+	// ======================================
 
 	var logs []InventoryLog
 
-	r.db.
+	if err := r.db.
 		Order("created_at ASC").
-		Find(&logs)
+		Find(&logs).Error; err != nil {
+		return nil, err
+	}
 
-	days := map[string]*StockMovementChart{}
+	// Always create all days
+	days := map[string]*StockMovementChart{
+		"Mon": {Day: "Mon"},
+		"Tue": {Day: "Tue"},
+		"Wed": {Day: "Wed"},
+		"Thu": {Day: "Thu"},
+		"Fri": {Day: "Fri"},
+		"Sat": {Day: "Sat"},
+		"Sun": {Day: "Sun"},
+	}
 
 	for _, log := range logs {
 
 		day := log.CreatedAt.Format("Mon")
 
-		if _, ok := days[day]; !ok {
-
-			days[day] = &StockMovementChart{
-				Day: day,
-			}
-
-		}
+		movement := days[day]
 
 		switch log.MovementType {
 
 		case Restock, StockIn, Return:
 
-			days[day].StockIn += log.Quantity
+			quantity := log.Quantity
+
+			if quantity < 0 {
+				quantity = -quantity
+			}
+
+			movement.StockIn += quantity
 
 		case Sale:
 
-			days[day].StockOut += log.Quantity
+			quantity := log.Quantity
+
+			if quantity < 0 {
+				quantity = -quantity
+			}
+
+			movement.StockOut += quantity
 
 		}
 	}
 
-	for _, value := range days {
+	orderedDays := []string{
+		"Mon",
+		"Tue",
+		"Wed",
+		"Thu",
+		"Fri",
+		"Sat",
+		"Sun",
+	}
 
-		analytics.WeeklyMovement =
-			append(
-				analytics.WeeklyMovement,
-				*value,
-			)
+	for _, day := range orderedDays {
 
+		analytics.WeeklyMovement = append(
+			analytics.WeeklyMovement,
+			*days[day],
+		)
 	}
 
 	return analytics, nil
