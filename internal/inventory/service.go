@@ -37,7 +37,7 @@ func (s *Service) Restock(req RestockRequest, createdBy string) (*InventoryLog, 
 
 	log := &InventoryLog{
 		ProductID:     product.ID,
-		MovementType:  Adjustment,
+		MovementType:  Restock,
 		Quantity:      req.Quantity,
 		PreviousStock: previousStock,
 		NewStock:      newStock,

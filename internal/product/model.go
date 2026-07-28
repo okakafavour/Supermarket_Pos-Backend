@@ -10,7 +10,7 @@ import (
 type Product struct {
 	common.BaseModel
 
-	Name        string `gorm:"size:150;not null"`
+	Name        string `gorm:"size:150;not null" `
 	Description string
 
 	SKU     string `gorm:"uniqueIndex;not null"`
