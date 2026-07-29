@@ -299,24 +299,20 @@ LOW STOCK PRODUCTS LIST
 ========================================
 */
 
-func (r *Repository) GetLowStockProducts() (
-	[]LowStockProduct, error,
-) {
+func (r *Repository) GetLowStockProducts() ([]LowStockProduct, error) {
 
-	var products []LowStockProduct
+	products := make([]LowStockProduct, 0)
 
 	err := r.db.
 		Table("products").
-		Select(
-			`
+		Select(`
 			products.id as product_id,
 			products.name as product_name,
 			products.quantity,
 			products.minimum_stock,
 			categories.name as category,
 			suppliers.name as supplier
-			`,
-		).
+		`).
 		Joins(
 			"LEFT JOIN categories ON categories.id = products.category_id",
 		).
