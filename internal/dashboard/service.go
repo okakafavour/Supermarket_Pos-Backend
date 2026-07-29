@@ -10,6 +10,12 @@ func NewService(repo *Repository) *Service {
 	}
 }
 
+/*
+========================================
+Dashboard Summary
+========================================
+*/
+
 func (s *Service) GetSummary() (*Summary, error) {
 
 	totalProducts, err := s.repo.CountProducts()
@@ -57,7 +63,7 @@ func (s *Service) GetSummary() (*Summary, error) {
 		return nil, err
 	}
 
-	summary := &Summary{
+	return &Summary{
 		TotalProducts:    int(totalProducts),
 		TotalCategories:  int(totalCategories),
 		TotalSuppliers:   int(totalSuppliers),
@@ -67,7 +73,55 @@ func (s *Service) GetSummary() (*Summary, error) {
 		TotalRevenue:     totalRevenue,
 		TodayRevenue:     todayRevenue,
 		LowStockProducts: int(lowStockProducts),
-	}
+	}, nil
+}
 
-	return summary, nil
+/*
+========================================
+Revenue Chart
+========================================
+*/
+
+func (s *Service) GetRevenueChart() ([]RevenuePoint, error) {
+	return s.repo.GetRevenueChart()
+}
+
+/*
+========================================
+Sales Chart
+========================================
+*/
+
+func (s *Service) GetSalesChart() ([]SalesPoint, error) {
+	return s.repo.GetSalesChart()
+}
+
+/*
+========================================
+Recent Sales
+========================================
+*/
+
+func (s *Service) GetRecentSales() ([]RecentSale, error) {
+	return s.repo.GetRecentSales()
+}
+
+/*
+========================================
+Top Selling Products
+========================================
+*/
+
+func (s *Service) GetTopProducts() ([]TopProduct, error) {
+	return s.repo.GetTopProducts()
+}
+
+/*
+========================================
+Low Stock Products
+========================================
+*/
+
+func (s *Service) GetLowStockProducts() ([]LowStockProduct, error) {
+	return s.repo.GetLowStockProducts()
 }
