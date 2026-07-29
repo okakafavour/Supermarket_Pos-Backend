@@ -16,15 +16,69 @@ func (r *Repository) Create(product *Product) error {
 	return r.db.Create(product).Error
 }
 
-func (r *Repository) GetAll() ([]Product, error) {
-	var products []Product
+func (r *Repository) GetAll(filter ProductFilter) ([]Product, int64, error) {
 
-	err := r.db.
+	var products []Product
+	var total int64
+
+	query := r.db.Model(&Product{}).
 		Preload("Category").
-		Preload("Supplier").
+		Preload("Supplier")
+
+	// Search
+	if filter.Search != "" {
+		query = query.Where(
+			"name ILIKE ? OR sku ILIKE ?",
+			"%"+filter.Search+"%",
+			"%"+filter.Search+"%",
+		)
+	}
+
+	// Category
+	if filter.Category != "" {
+		query = query.Where("category_id = ?", filter.Category)
+	}
+
+	// Stock Status
+	switch filter.Status {
+
+	case "low":
+		query = query.Where("quantity <= minimum_stock AND quantity > 0")
+
+	case "out":
+		query = query.Where("quantity = 0")
+
+	case "healthy":
+		query = query.Where("quantity > minimum_stock")
+	}
+
+	// Count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Sorting
+	sortBy := "created_at"
+
+	if filter.SortBy != "" {
+		sortBy = filter.SortBy
+	}
+
+	order := "DESC"
+
+	if filter.Order == "asc" {
+		order = "ASC"
+	}
+
+	offset := (filter.Page - 1) * filter.Limit
+
+	err := query.
+		Order(sortBy + " " + order).
+		Offset(offset).
+		Limit(filter.Limit).
 		Find(&products).Error
 
-	return products, err
+	return products, total, err
 }
 
 func (r *Repository) GetByID(id string) (*Product, error) {

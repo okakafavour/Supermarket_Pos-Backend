@@ -2,6 +2,7 @@ package product
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -43,7 +44,33 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
-	products, err := h.service.GetAll()
+
+	// ----------------------------
+	// Query Parameters
+	// ----------------------------
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+
+	if page < 1 {
+		page = 1
+	}
+
+	if limit < 1 {
+		limit = 10
+	}
+
+	filter := ProductFilter{
+		Page:     page,
+		Limit:    limit,
+		Search:   c.Query("search"),
+		Category: c.Query("category"),
+		Status:   c.Query("status"),
+		SortBy:   c.DefaultQuery("sortBy", "created_at"),
+		Order:    c.DefaultQuery("order", "desc"),
+	}
+
+	products, pagination, err := h.service.GetAll(filter)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -54,8 +81,9 @@ func (h *Handler) GetAll(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    products,
+		"success":    true,
+		"data":       products,
+		"pagination": pagination,
 	})
 }
 
