@@ -173,23 +173,18 @@ LAST 12 MONTHS
 ========================================
 */
 
-func (r *Repository) GetRevenueChart() (
-	[]RevenuePoint, error,
-) {
+func (r *Repository) GetRevenueChart() ([]RevenuePoint, error) {
 
 	var result []RevenuePoint
 
 	err := r.db.
 		Table("payments").
-		Select(
-			"TO_CHAR(created_at,'Mon') as month, SUM(amount) as revenue",
-		).
-		Group(
-			"month",
-		).
-		Order(
-			"MIN(created_at)",
-		).
+		Select(`
+			TO_CHAR(created_at, 'Mon') AS month,
+			COALESCE(SUM(amount), 0) AS revenue
+		`).
+		Group("TO_CHAR(created_at, 'Mon')").
+		Order("MIN(created_at)").
 		Scan(&result).
 		Error
 
@@ -203,31 +198,22 @@ LAST 7 DAYS
 ========================================
 */
 
-func (r *Repository) GetSalesChart() (
-	[]SalesPoint, error,
-) {
+func (r *Repository) GetSalesChart() ([]SalesPoint, error) {
 
 	var result []SalesPoint
 
 	err := r.db.
 		Table("sales").
-		Select(
-			"TO_CHAR(created_at,'Dy') as day, COUNT(id) as sales",
-		).
+		Select(`
+			TO_CHAR(created_at, 'Dy') AS day,
+			COUNT(id) AS sales
+		`).
 		Where(
 			"created_at >= ?",
-			time.Now().AddDate(
-				0,
-				0,
-				-7,
-			),
+			time.Now().AddDate(0, 0, -7),
 		).
-		Group(
-			"day",
-		).
-		Order(
-			"MIN(created_at)",
-		).
+		Group("TO_CHAR(created_at, 'Dy')").
+		Order("MIN(created_at)").
 		Scan(&result).
 		Error
 
