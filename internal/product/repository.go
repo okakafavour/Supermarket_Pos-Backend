@@ -58,18 +58,48 @@ func (r *Repository) GetAll(filter ProductFilter) ([]Product, int64, error) {
 	}
 
 	// Sorting
-	sortBy := "created_at"
+	// ----------------------------
+	// Sorting
+	// ----------------------------
 
-	if filter.SortBy != "" {
+	sortBy := "created_at"
+	order := "DESC"
+
+	switch filter.SortBy {
+
+	case "", "latest":
+		sortBy = "created_at"
+		order = "DESC"
+
+	case "oldest":
+		sortBy = "created_at"
+		order = "ASC"
+
+	case "name":
+		sortBy = "name"
+
+	case "price":
+		sortBy = "selling_price"
+
+	case "stock":
+		sortBy = "quantity"
+
+	case "cost":
+		sortBy = "cost_price"
+
+	case "sku":
+		sortBy = "sku"
+
+	default:
+		// Allow actual database columns if they are sent
 		sortBy = filter.SortBy
 	}
 
-	order := "DESC"
-
-	if filter.Order == "asc" {
+	if filter.Order == "asc" &&
+		filter.SortBy != "latest" &&
+		filter.SortBy != "oldest" {
 		order = "ASC"
 	}
-
 	offset := (filter.Page - 1) * filter.Limit
 
 	err := query.
