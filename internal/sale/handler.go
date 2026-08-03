@@ -55,35 +55,22 @@ func (h *Handler) Create(c *gin.Context) {
 
 // Get All Sales
 func (h *Handler) GetAll(c *gin.Context) {
-
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 
-	if page < 1 {
-		page = 1
-	}
-
-	if limit < 1 {
-		limit = 10
-	}
-
 	filter := SaleFilter{
-		Page:  page,
-		Limit: limit,
-
-		Search: c.Query("search"),
-
-		Status: c.Query("status"),
-
+		Page:          page,
+		Limit:         limit,
+		Search:        c.Query("search"),
 		PaymentMethod: c.Query("payment"),
-
-		SortBy: c.DefaultQuery("sortBy", "latest"),
-
-		Order: c.DefaultQuery("order", "desc"),
+		Status:        c.Query("status"),
+		From:          c.Query("from"),
+		To:            c.Query("to"),
+		SortBy:        c.DefaultQuery("sortBy", "latest"),
+		Order:         c.DefaultQuery("order", "desc"),
 	}
 
 	sales, pagination, err := h.service.GetAll(filter)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
