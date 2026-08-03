@@ -180,3 +180,21 @@ func (h *Handler) GetDeleted(c *gin.Context) {
 		"data":    sales,
 	})
 }
+
+// Dashboard
+func (h *Handler) Dashboard(c *gin.Context) {
+
+	data, err := h.service.GetDashboard()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}

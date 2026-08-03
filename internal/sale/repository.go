@@ -27,14 +27,11 @@ func (r *Repository) GetAll(
 
 	query := r.db.
 		Model(&Sale{}).
-		Preload("Items").
-		Preload("Items.Product").
-		Preload("Items.Product.Category").
-		Preload("Items.Product.Supplier")
+		Preload("Items")
 
-	// ------------------------
+	//---------------------------------
 	// Search
-	// ------------------------
+	//---------------------------------
 
 	if filter.Search != "" {
 		query = query.Where(
@@ -44,9 +41,9 @@ func (r *Repository) GetAll(
 		)
 	}
 
-	// ------------------------
-	// Payment Method
-	// ------------------------
+	//---------------------------------
+	// Payment
+	//---------------------------------
 
 	if filter.PaymentMethod != "" {
 		query = query.Where(
@@ -55,9 +52,9 @@ func (r *Repository) GetAll(
 		)
 	}
 
-	// ------------------------
+	//---------------------------------
 	// Status
-	// ------------------------
+	//---------------------------------
 
 	if filter.Status != "" {
 		query = query.Where(
@@ -66,27 +63,21 @@ func (r *Repository) GetAll(
 		)
 	}
 
-	// ------------------------
+	//---------------------------------
 	// Count
-	// ------------------------
+	//---------------------------------
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// ------------------------
-	// Safe Sorting
-	// ------------------------
+	//---------------------------------
+	// Sorting
+	//---------------------------------
 
 	sortColumn := "created_at"
 
 	switch filter.SortBy {
-
-	case "latest":
-		sortColumn = "created_at"
-
-	case "oldest":
-		sortColumn = "created_at"
 
 	case "invoice":
 		sortColumn = "invoice_number"
@@ -215,4 +206,55 @@ func (r *Repository) GetDeleted() ([]Sale, error) {
 	}
 
 	return sales, nil
+}
+
+func (r *Repository) GetDashboard() (*DashboardResponse, error) {
+
+	var dashboard DashboardResponse
+
+	// Total Sales
+	if err := r.db.
+		Model(&Sale{}).
+		Count(&dashboard.TotalSales).Error; err != nil {
+		return nil, err
+	}
+
+	// Total Revenue
+	r.db.
+		Model(&Sale{}).
+		Select("COALESCE(SUM(total_amount),0)").
+		Scan(&dashboard.TotalRevenue)
+
+	// Average Sale
+	r.db.
+		Model(&Sale{}).
+		Select("COALESCE(AVG(total_amount),0)").
+		Scan(&dashboard.AverageSale)
+
+	// Pending
+	r.db.
+		Model(&Sale{}).
+		Where("status = ?", SalePending).
+		Count(&dashboard.PendingSales)
+
+	// Paid
+	r.db.
+		Model(&Sale{}).
+		Where("status = ?", SalePaid).
+		Count(&dashboard.PaidSales)
+
+	// Today's Revenue
+	r.db.
+		Model(&Sale{}).
+		Where("DATE(created_at) = CURRENT_DATE").
+		Select("COALESCE(SUM(total_amount),0)").
+		Scan(&dashboard.TodaysRevenue)
+
+	// Today's Sales
+	r.db.
+		Model(&Sale{}).
+		Where("DATE(created_at) = CURRENT_DATE").
+		Count(&dashboard.TodaysSales)
+
+	return &dashboard, nil
 }

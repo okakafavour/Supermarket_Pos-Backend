@@ -1,6 +1,10 @@
 package sale
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type CreateSaleRequest struct {
 	CustomerName  string                  `json:"customer_name"`
@@ -59,4 +63,25 @@ type Pagination struct {
 	Limit      int   `json:"limit"`
 	Total      int64 `json:"total"`
 	TotalPages int   `json:"total_pages"`
+}
+
+type SaleListResponse struct {
+	ID            uuid.UUID     `json:"id"`
+	InvoiceNumber string        `json:"invoice_number"`
+	CustomerName  string        `json:"customer_name"`
+	TotalAmount   float64       `json:"total_amount"`
+	Status        SaleStatus    `json:"status"`
+	PaymentMethod PaymentMethod `json:"payment_method"`
+	SoldBy        string        `json:"sold_by"`
+	CreatedAt     time.Time     `json:"created_at"`
+}
+
+type DashboardResponse struct {
+	TotalSales    int64   `json:"total_sales"`
+	TotalRevenue  float64 `json:"total_revenue"`
+	AverageSale   float64 `json:"average_sale"`
+	PendingSales  int64   `json:"pending_sales"`
+	PaidSales     int64   `json:"paid_sales"`
+	TodaysRevenue float64 `json:"todays_revenue"`
+	TodaysSales   int64   `json:"todays_sales"`
 }

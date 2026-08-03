@@ -184,3 +184,8 @@ func (s *Service) GetDeleted() ([]Sale, error) {
 func parseUUID(id string) (uuid.UUID, error) {
 	return uuid.Parse(id)
 }
+
+// Dashboard
+func (s *Service) GetDashboard() (*DashboardResponse, error) {
+	return s.repo.GetDashboard()
+}
