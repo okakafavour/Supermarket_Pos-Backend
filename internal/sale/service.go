@@ -189,3 +189,7 @@ func parseUUID(id string) (uuid.UUID, error) {
 func (s *Service) GetDashboard() (*DashboardResponse, error) {
 	return s.repo.GetDashboard()
 }
+
+func (s *Service) GetAnalytics() (*AnalyticsResponse, error) {
+	return s.repo.GetAnalytics()
+}

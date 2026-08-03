@@ -198,3 +198,20 @@ func (h *Handler) Dashboard(c *gin.Context) {
 		"data":    data,
 	})
 }
+
+func (h *Handler) GetAnalytics(c *gin.Context) {
+
+	data, err := h.service.GetAnalytics()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    data,
+	})
+}

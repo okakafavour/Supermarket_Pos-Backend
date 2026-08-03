@@ -258,3 +258,112 @@ func (r *Repository) GetDashboard() (*DashboardResponse, error) {
 
 	return &dashboard, nil
 }
+
+func (r *Repository) GetAnalytics() (*AnalyticsResponse, error) {
+
+	response := &AnalyticsResponse{}
+
+	//----------------------------------
+	// Sales Trend (Last 30 Days)
+	//----------------------------------
+
+	if err := r.db.
+		Raw(`
+			SELECT
+				DATE(created_at) as date,
+				COUNT(*) as sales,
+				COALESCE(SUM(total_amount),0) as revenue
+			FROM sales
+			WHERE deleted_at IS NULL
+			AND created_at >= NOW() - INTERVAL '30 days'
+			GROUP BY DATE(created_at)
+			ORDER BY DATE(created_at)
+		`).
+		Scan(&response.SalesTrend).Error; err != nil {
+		return nil, err
+	}
+
+	//----------------------------------
+	// Payment Methods
+	//----------------------------------
+
+	if err := r.db.
+		Raw(`
+			SELECT
+				payment_method as method,
+				COUNT(*) as count,
+				COALESCE(SUM(total_amount),0) as amount
+			FROM sales
+			WHERE deleted_at IS NULL
+			GROUP BY payment_method
+			ORDER BY amount DESC
+		`).
+		Scan(&response.PaymentMethods).Error; err != nil {
+		return nil, err
+	}
+
+	//----------------------------------
+	// Top Products
+	//----------------------------------
+
+	if err := r.db.
+		Raw(`
+			SELECT
+				p.id as product_id,
+				p.name,
+				SUM(si.quantity) as quantity,
+				SUM(si.subtotal) as revenue
+			FROM sale_items si
+			JOIN products p
+			ON p.id = si.product_id
+			GROUP BY p.id,p.name
+			ORDER BY quantity DESC
+			LIMIT 10
+		`).
+		Scan(&response.TopProducts).Error; err != nil {
+		return nil, err
+	}
+
+	//----------------------------------
+	// Hourly Sales (Today)
+	//----------------------------------
+
+	if err := r.db.
+		Raw(`
+			SELECT
+				EXTRACT(HOUR FROM created_at)::INT as hour,
+				COUNT(*) as sales,
+				COALESCE(SUM(total_amount),0) as revenue
+			FROM sales
+			WHERE deleted_at IS NULL
+			AND DATE(created_at)=CURRENT_DATE
+			GROUP BY hour
+			ORDER BY hour
+		`).
+		Scan(&response.HourlySales).Error; err != nil {
+		return nil, err
+	}
+
+	//----------------------------------
+	// Monthly Revenue (12 Months)
+	//----------------------------------
+
+	if err := r.db.
+		Raw(`
+			SELECT
+				TO_CHAR(created_at,'Mon') as month,
+				COALESCE(SUM(total_amount),0) as revenue
+			FROM sales
+			WHERE deleted_at IS NULL
+			AND created_at >= NOW() - INTERVAL '12 months'
+			GROUP BY
+				DATE_PART('month',created_at),
+				TO_CHAR(created_at,'Mon')
+			ORDER BY DATE_PART('month',created_at)
+		`).
+		Scan(&response.MonthlyRevenue).Error; err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}

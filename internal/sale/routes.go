@@ -64,6 +64,12 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 			handler.Dashboard,
 		)
 
+		sales.GET(
+			"/analytics",
+			middleware.RequireRole("admin", "manager"),
+			handler.GetAnalytics,
+		)
+
 		// Restore Sale
 		sales.PATCH(
 			"/:id/restore",
