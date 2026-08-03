@@ -315,8 +315,8 @@ func (r *Repository) GetAnalytics() (*AnalyticsResponse, error) {
 				SUM(si.subtotal) as revenue
 			FROM sale_items si
 			JOIN products p
-			ON p.id = si.product_id
-			GROUP BY p.id,p.name
+				ON p.id = si.product_id
+			GROUP BY p.id, p.name
 			ORDER BY quantity DESC
 			LIMIT 10
 		`).
@@ -336,7 +336,7 @@ func (r *Repository) GetAnalytics() (*AnalyticsResponse, error) {
 				COALESCE(SUM(total_amount),0) as revenue
 			FROM sales
 			WHERE deleted_at IS NULL
-			AND DATE(created_at)=CURRENT_DATE
+			AND DATE(created_at) = CURRENT_DATE
 			GROUP BY hour
 			ORDER BY hour
 		`).
@@ -345,24 +345,49 @@ func (r *Repository) GetAnalytics() (*AnalyticsResponse, error) {
 	}
 
 	//----------------------------------
-	// Monthly Revenue (12 Months)
+	// Monthly Revenue (Last 12 Months)
 	//----------------------------------
 
 	if err := r.db.
 		Raw(`
 			SELECT
-				TO_CHAR(created_at,'Mon') as month,
+				TO_CHAR(created_at, 'Mon') as month,
 				COALESCE(SUM(total_amount),0) as revenue
 			FROM sales
 			WHERE deleted_at IS NULL
 			AND created_at >= NOW() - INTERVAL '12 months'
 			GROUP BY
-				DATE_PART('month',created_at),
-				TO_CHAR(created_at,'Mon')
-			ORDER BY DATE_PART('month',created_at)
+				DATE_PART('year', created_at),
+				DATE_PART('month', created_at),
+				TO_CHAR(created_at, 'Mon')
+			ORDER BY
+				DATE_PART('year', created_at),
+				DATE_PART('month', created_at)
 		`).
 		Scan(&response.MonthlyRevenue).Error; err != nil {
 		return nil, err
+	}
+
+	// Ensure empty arrays instead of null
+
+	if response.SalesTrend == nil {
+		response.SalesTrend = []SalesTrend{}
+	}
+
+	if response.PaymentMethods == nil {
+		response.PaymentMethods = []PaymentSummary{}
+	}
+
+	if response.TopProducts == nil {
+		response.TopProducts = []TopProduct{}
+	}
+
+	if response.HourlySales == nil {
+		response.HourlySales = []HourlySale{}
+	}
+
+	if response.MonthlyRevenue == nil {
+		response.MonthlyRevenue = []MonthlyRevenue{}
 	}
 
 	return response, nil
