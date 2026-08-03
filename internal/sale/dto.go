@@ -38,3 +38,25 @@ type SaleItemResponse struct {
 	UnitPrice   float64   `json:"unit_price"`
 	TotalPrice  float64   `json:"total_price"`
 }
+
+type SaleFilter struct {
+	Page  int
+	Limit int
+
+	Search        string
+	Status        string
+	PaymentMethod string
+
+	From string
+	To   string
+
+	SortBy string
+	Order  string
+}
+
+type Pagination struct {
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	Total      int64 `json:"total"`
+	TotalPages int   `json:"total_pages"`
+}

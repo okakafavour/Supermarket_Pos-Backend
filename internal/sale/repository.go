@@ -18,18 +18,119 @@ func (r *Repository) Create(sale *Sale) error {
 }
 
 // Get All Sales
-func (r *Repository) GetAll() ([]Sale, error) {
-	var sales []Sale
+func (r *Repository) GetAll(
+	filter SaleFilter,
+) ([]Sale, int64, error) {
 
-	err := r.db.
+	var sales []Sale
+	var total int64
+
+	query := r.db.
+		Model(&Sale{}).
 		Preload("Items").
 		Preload("Items.Product").
 		Preload("Items.Product.Category").
-		Preload("Items.Product.Supplier").
-		Order("created_at DESC").
+		Preload("Items.Product.Supplier")
+
+	// ------------------------
+	// Search
+	// ------------------------
+
+	if filter.Search != "" {
+		query = query.Where(
+			"invoice_number ILIKE ? OR customer_name ILIKE ?",
+			"%"+filter.Search+"%",
+			"%"+filter.Search+"%",
+		)
+	}
+
+	// ------------------------
+	// Payment Method
+	// ------------------------
+
+	if filter.PaymentMethod != "" {
+		query = query.Where(
+			"payment_method = ?",
+			filter.PaymentMethod,
+		)
+	}
+
+	// ------------------------
+	// Status
+	// ------------------------
+
+	if filter.Status != "" {
+		query = query.Where(
+			"status = ?",
+			filter.Status,
+		)
+	}
+
+	// ------------------------
+	// Count
+	// ------------------------
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// ------------------------
+	// Safe Sorting
+	// ------------------------
+
+	sortColumn := "created_at"
+
+	switch filter.SortBy {
+
+	case "latest":
+		sortColumn = "created_at"
+
+	case "oldest":
+		sortColumn = "created_at"
+
+	case "invoice":
+		sortColumn = "invoice_number"
+
+	case "customer":
+		sortColumn = "customer_name"
+
+	case "amount":
+		sortColumn = "total_amount"
+
+	case "payment":
+		sortColumn = "payment_method"
+
+	case "status":
+		sortColumn = "status"
+	}
+
+	order := "DESC"
+
+	if filter.SortBy == "oldest" {
+		order = "ASC"
+	}
+
+	if filter.Order == "asc" {
+		order = "ASC"
+	}
+
+	if filter.Order == "desc" {
+		order = "DESC"
+	}
+
+	offset := (filter.Page - 1) * filter.Limit
+
+	err := query.
+		Order(sortColumn + " " + order).
+		Offset(offset).
+		Limit(filter.Limit).
 		Find(&sales).Error
 
-	return sales, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return sales, total, nil
 }
 
 // Get Sale By ID
@@ -60,7 +161,7 @@ func (r *Repository) Delete(id string) error {
 	return r.db.Delete(&Sale{}, "id = ?", id).Error
 }
 
-// Restore Soft Deleted Sale
+// Restore
 func (r *Repository) Restore(id string) error {
 	return r.db.
 		Unscoped().
@@ -69,12 +170,11 @@ func (r *Repository) Restore(id string) error {
 		Update("deleted_at", nil).Error
 }
 
-// Permanently Delete Sale
+// Permanent Delete
 func (r *Repository) PermanentDelete(id string) error {
 
 	tx := r.db.Begin()
 
-	// Delete sale items first
 	if err := tx.
 		Unscoped().
 		Where("sale_id = ?", id).
@@ -84,7 +184,6 @@ func (r *Repository) PermanentDelete(id string) error {
 		return err
 	}
 
-	// Delete the sale
 	if err := tx.
 		Unscoped().
 		Delete(&Sale{}, "id = ?", id).Error; err != nil {
@@ -98,6 +197,7 @@ func (r *Repository) PermanentDelete(id string) error {
 
 // Get Deleted Sales
 func (r *Repository) GetDeleted() ([]Sale, error) {
+
 	var sales []Sale
 
 	err := r.db.
@@ -110,5 +210,9 @@ func (r *Repository) GetDeleted() ([]Sale, error) {
 		Order("created_at DESC").
 		Find(&sales).Error
 
-	return sales, err
+	if err != nil {
+		return nil, err
+	}
+
+	return sales, nil
 }

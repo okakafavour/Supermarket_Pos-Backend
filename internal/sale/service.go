@@ -133,8 +133,32 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 	return createdSale, warning, nil
 }
 
-func (s *Service) GetAll() ([]Sale, error) {
-	return s.repo.GetAll()
+func (s *Service) GetAll(
+	filter SaleFilter,
+) ([]Sale, Pagination, error) {
+
+	sales, total, err := s.repo.GetAll(filter)
+	if err != nil {
+		return nil, Pagination{}, err
+	}
+
+	totalPages := 0
+
+	if total > 0 {
+		totalPages = int(
+			(total + int64(filter.Limit) - 1) /
+				int64(filter.Limit),
+		)
+	}
+
+	pagination := Pagination{
+		Page:       filter.Page,
+		Limit:      filter.Limit,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+
+	return sales, pagination, nil
 }
 
 func (s *Service) GetByID(id string) (*Sale, error) {
