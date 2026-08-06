@@ -108,3 +108,33 @@ func (r *Repository) Search(query string) ([]Customer, error) {
 
 	return customers, err
 }
+
+func (r *Repository) GetDashboard() (*CustomerDashboard, error) {
+
+	var dashboard CustomerDashboard
+
+	r.db.Model(&Customer{}).
+		Count(&dashboard.TotalCustomers)
+
+	r.db.Model(&Customer{}).
+		Where("is_active = ?", true).
+		Count(&dashboard.ActiveCustomers)
+
+	r.db.Model(&Customer{}).
+		Where("is_active = ?", false).
+		Count(&dashboard.InactiveCustomers)
+
+	r.db.Model(&Customer{}).
+		Where("loyalty_points > 0").
+		Count(&dashboard.LoyaltyMembers)
+
+	r.db.Model(&Customer{}).
+		Select("COALESCE(SUM(total_spent),0)").
+		Scan(&dashboard.TotalRevenue)
+
+	r.db.Model(&Customer{}).
+		Select("COALESCE(SUM(total_orders),0)").
+		Scan(&dashboard.TotalOrders)
+
+	return &dashboard, nil
+}

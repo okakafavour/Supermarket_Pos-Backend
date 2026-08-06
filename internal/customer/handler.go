@@ -247,3 +247,22 @@ func (h *Handler) PermanentDelete(c *gin.Context) {
 		"message": "Customer permanently deleted successfully",
 	})
 }
+
+func (h *Handler) Dashboard(c *gin.Context) {
+
+	dashboard, err := h.service.GetDashboard()
+	if err != nil {
+
+		c.JSON(500, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"success": true,
+		"data":    dashboard,
+	})
+}

@@ -130,3 +130,7 @@ func (s *Service) AddLoyaltyPoints(id string, points int64) (*Customer, error) {
 
 	return customer, nil
 }
+
+func (s *Service) GetDashboard() (*CustomerDashboard, error) {
+	return s.repo.GetDashboard()
+}

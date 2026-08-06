@@ -65,6 +65,12 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 			handler.Restore,
 		)
 
+		customers.GET(
+			"/dashboard",
+			middleware.RequireRole("admin", "manager", "cashier"),
+			handler.Dashboard,
+		)
+
 		customers.DELETE(
 			"/:id/permanent",
 			middleware.RequireRole("admin"),

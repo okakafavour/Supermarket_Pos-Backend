@@ -53,3 +53,12 @@ func ToCustomerResponse(c *Customer) CustomerResponse {
 		IsActive:      c.IsActive,
 	}
 }
+
+type CustomerDashboard struct {
+	TotalCustomers    int64   `json:"total_customers"`
+	ActiveCustomers   int64   `json:"active_customers"`
+	InactiveCustomers int64   `json:"inactive_customers"`
+	TotalRevenue      float64 `json:"total_revenue"`
+	TotalOrders       int64   `json:"total_orders"`
+	LoyaltyMembers    int64   `json:"loyalty_members"`
+}
