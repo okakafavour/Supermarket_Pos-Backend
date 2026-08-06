@@ -1,17 +1,34 @@
 package supplier
 
-import "github.com/okakafavour/supermarket-pos-backend/internal/common"
+import (
+	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 type Supplier struct {
-	common.BaseModel
+	ID uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey" json:"id"`
 
-	Name          string `gorm:"size:150;not null"`
-	ContactPerson string `gorm:"size:150"`
-	Email         string `gorm:"uniqueIndex"`
-	Phone         string `gorm:"size:20"`
-	Address       string `gorm:"type:text"`
-	City          string `gorm:"size:100"`
-	State         string `gorm:"size:100"`
-	Country       string `gorm:"size:100"`
-	IsActive      bool   `gorm:"default:true"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Name string `json:"name"`
+
+	ContactPerson string `json:"contact_person"`
+
+	Email string `json:"email"`
+
+	Phone string `json:"phone"`
+
+	Address string `json:"address"`
+
+	City string `json:"city"`
+
+	State string `json:"state"`
+
+	Country string `json:"country"`
+
+	IsActive bool `json:"is_active"`
 }

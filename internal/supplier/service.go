@@ -52,7 +52,7 @@ func (s *Service) Create(req CreateSupplierRequest) (*Supplier, error) {
 }
 
 // ==========================================
-// GET ALL (Paginated)
+// GET ALL
 // ==========================================
 
 func (s *Service) GetAll(filter SupplierFilter) (*PaginatedSuppliers, error) {
@@ -101,39 +101,56 @@ func (s *Service) Update(id string, req UpdateSupplierRequest) (*Supplier, error
 		return nil, err
 	}
 
-	if req.Name != "" {
-		supplier.Name = req.Name
+	if req.Name != nil {
+		supplier.Name = *req.Name
 	}
 
-	if req.ContactPerson != "" {
-		supplier.ContactPerson = req.ContactPerson
+	if req.ContactPerson != nil {
+		supplier.ContactPerson = *req.ContactPerson
 	}
 
-	if req.Email != "" {
-		supplier.Email = req.Email
+	if req.Email != nil {
+
+		// prevent duplicate emails
+		existing, err := s.repo.GetByEmail(*req.Email)
+
+		if err == nil &&
+			existing != nil &&
+			existing.ID != supplier.ID {
+
+			return nil, errors.New("supplier with this email already exists")
+		}
+
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+
+		supplier.Email = *req.Email
 	}
 
-	if req.Phone != "" {
-		supplier.Phone = req.Phone
+	if req.Phone != nil {
+		supplier.Phone = *req.Phone
 	}
 
-	if req.Address != "" {
-		supplier.Address = req.Address
+	if req.Address != nil {
+		supplier.Address = *req.Address
 	}
 
-	if req.City != "" {
-		supplier.City = req.City
+	if req.City != nil {
+		supplier.City = *req.City
 	}
 
-	if req.State != "" {
-		supplier.State = req.State
+	if req.State != nil {
+		supplier.State = *req.State
 	}
 
-	if req.Country != "" {
-		supplier.Country = req.Country
+	if req.Country != nil {
+		supplier.Country = *req.Country
 	}
 
-	supplier.IsActive = req.IsActive
+	if req.IsActive != nil {
+		supplier.IsActive = *req.IsActive
+	}
 
 	if err := s.repo.Update(supplier); err != nil {
 		return nil, err
