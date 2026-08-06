@@ -46,21 +46,39 @@ func (h *Handler) Create(c *gin.Context) {
 	})
 }
 
-// Get All Purchases
+// ==========================================
+// GET ALL PURCHASES
+// ==========================================
+
 func (h *Handler) GetAll(c *gin.Context) {
 
-	purchases, err := h.service.GetAll()
+	var filter PurchaseFilter
+
+	if err := c.ShouldBindQuery(&filter); err != nil {
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	result, err := h.service.GetAll(filter)
+
 	if err != nil {
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    purchases,
+		"data":    result,
 	})
 }
 
@@ -84,17 +102,23 @@ func (h *Handler) GetByID(c *gin.Context) {
 	})
 }
 
-// Receive Purchase
+// ==========================================
+// RECEIVE PURCHASE
+// ==========================================
+
 func (h *Handler) Receive(c *gin.Context) {
 
 	id := c.Param("id")
+
 	userID := c.GetString("userID")
 
 	if err := h.service.Receive(id, userID); err != nil {
+
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),
 		})
+
 		return
 	}
 
@@ -120,5 +144,53 @@ func (h *Handler) Delete(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Purchase deleted successfully",
+	})
+}
+
+// ==========================================
+// PURCHASE STATISTICS
+// ==========================================
+
+func (h *Handler) GetStats(c *gin.Context) {
+
+	stats, err := h.service.GetStats()
+
+	if err != nil {
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    stats,
+	})
+}
+
+// ==========================================
+// CANCEL PURCHASE
+// ==========================================
+
+func (h *Handler) Cancel(c *gin.Context) {
+
+	id := c.Param("id")
+
+	if err := h.service.Cancel(id); err != nil {
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Purchase cancelled successfully",
 	})
 }

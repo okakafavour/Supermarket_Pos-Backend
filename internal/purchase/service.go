@@ -38,9 +38,9 @@ func generatePurchaseInvoice() string {
 	now := time.Now()
 
 	return fmt.Sprintf(
-		"PUR-%s-%04d",
+		"PUR-%s-%06d",
 		now.Format("20060102"),
-		now.Unix()%10000,
+		now.UnixNano()%1000000,
 	)
 }
 
@@ -78,6 +78,14 @@ func (s *Service) Create(
 
 		subtotal := float64(item.Quantity) * item.UnitCost
 
+		if item.Quantity <= 0 {
+			return nil, fmt.Errorf("quantity must be greater than zero")
+		}
+
+		if item.UnitCost <= 0 {
+			return nil, fmt.Errorf("unit cost must be greater than zero")
+		}
+
 		purchase.Items = append(
 			purchase.Items,
 			PurchaseItem{
@@ -112,6 +120,10 @@ func (s *Service) Receive(id, userID string) error {
 
 		if purchase.Status == Received {
 			return fmt.Errorf("purchase already received")
+		}
+
+		if len(purchase.Items) == 0 {
+			return fmt.Errorf("purchase contains no items")
 		}
 
 		for _, item := range purchase.Items {
@@ -160,8 +172,59 @@ func (s *Service) Receive(id, userID string) error {
 }
 
 // Get All Purchases
-func (s *Service) GetAll() ([]Purchase, error) {
-	return s.repo.GetAll()
+// ==========================================
+// GET ALL PURCHASES
+// ==========================================
+
+func (s *Service) GetAll(
+	filter PurchaseFilter,
+) (*PaginatedPurchases, error) {
+
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+
+	if filter.Limit <= 0 {
+		filter.Limit = 10
+	}
+
+	if filter.Limit > 100 {
+		filter.Limit = 100
+	}
+
+	return s.repo.GetAll(filter)
+}
+
+// ==========================================
+// PURCHASE STATISTICS
+// ==========================================
+
+func (s *Service) GetStats() (*PurchaseStats, error) {
+	return s.repo.GetStats()
+}
+
+// ==========================================
+// CANCEL PURCHASE
+// ==========================================
+
+func (s *Service) Cancel(id string) error {
+
+	purchase, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
+	}
+
+	if purchase.Status == Received {
+		return fmt.Errorf("received purchases cannot be cancelled")
+	}
+
+	if purchase.Status == Cancelled {
+		return fmt.Errorf("purchase already cancelled")
+	}
+
+	purchase.Status = Cancelled
+
+	return s.repo.Cancel(purchase)
 }
 
 // Get Purchase By ID

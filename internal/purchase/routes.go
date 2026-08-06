@@ -44,15 +44,27 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		)
 
 		purchases.GET(
+			"/stats",
+			middleware.RequireRole("admin", "manager", "cashier"),
+			handler.GetStats,
+		)
+
+		purchases.GET(
 			"/:id",
 			middleware.RequireRole("admin", "manager", "cashier"),
 			handler.GetByID,
 		)
 
-		purchases.POST(
+		purchases.PATCH(
 			"/:id/receive",
 			middleware.RequireRole("admin", "manager"),
 			handler.Receive,
+		)
+
+		purchases.PATCH(
+			"/:id/cancel",
+			middleware.RequireRole("admin", "manager"),
+			handler.Cancel,
 		)
 
 		purchases.DELETE(
