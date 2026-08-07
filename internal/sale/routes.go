@@ -38,7 +38,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		// Get All Sales
 		sales.GET(
 			"",
-			middleware.RequireRole("admin", "manager"),
+			middleware.RequireRole("admin", "manager", "cashier"),
 			handler.GetAll,
 		)
 
