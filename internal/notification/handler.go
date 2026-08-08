@@ -137,3 +137,28 @@ func (h *Handler) DeleteAll(c *gin.Context) {
 		"message": "All notifications deleted",
 	})
 }
+
+// POST /notifications/test
+func (h *Handler) CreateTestNotification(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	err := h.service.Create(
+		userID,
+		LowStockNotification,
+		"Low Stock Alert",
+		"Test product is below the minimum stock level. Only 3 left.",
+	)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Test notification created",
+	})
+}

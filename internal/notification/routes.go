@@ -55,6 +55,11 @@ func RegisterRoutes(
 		handler.MarkAsRead,
 	)
 
+	notifications.POST(
+		"/test",
+		handler.CreateTestNotification,
+	)
+
 	// DELETE /notifications
 	notifications.DELETE(
 		"",
