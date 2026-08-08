@@ -8,6 +8,7 @@ import (
 	"github.com/okakafavour/supermarket-pos-backend/internal/category"
 	"github.com/okakafavour/supermarket-pos-backend/internal/customer"
 	"github.com/okakafavour/supermarket-pos-backend/internal/inventory"
+	"github.com/okakafavour/supermarket-pos-backend/internal/notification"
 	"github.com/okakafavour/supermarket-pos-backend/internal/payment"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
 	"github.com/okakafavour/supermarket-pos-backend/internal/purchase"
@@ -68,6 +69,7 @@ func ConnectDatabase() *gorm.DB {
 		&returns.Return{},
 		&returns.ReturnItem{},
 		&settings.Settings{},
+		&notification.Notification{},
 	); err != nil {
 		log.Fatal("Migration failed:", err)
 	}

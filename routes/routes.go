@@ -12,6 +12,7 @@ import (
 	"github.com/okakafavour/supermarket-pos-backend/internal/dashboard"
 	"github.com/okakafavour/supermarket-pos-backend/internal/inventory"
 	"github.com/okakafavour/supermarket-pos-backend/internal/middleware"
+	"github.com/okakafavour/supermarket-pos-backend/internal/notification"
 	"github.com/okakafavour/supermarket-pos-backend/internal/payment"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
 	"github.com/okakafavour/supermarket-pos-backend/internal/purchase"
@@ -60,4 +61,5 @@ func RegisterRoutes(router *gin.Engine, db *gorm.DB) {
 	returns.RegisterRoutes(api, db)
 	user.RegisterRoutes(api, db)
 	settings.RegisterRoutes(api, db)
+	notification.RegisterRoutes(api, db)
 }
