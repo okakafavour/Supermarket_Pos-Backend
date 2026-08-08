@@ -17,6 +17,13 @@ type UpdateUserRequest struct {
 	Role      Role   `json:"role" binding:"required"`
 }
 
+type UpdateProfileRequest struct {
+	FirstName string `json:"first_name" binding:"required"`
+	LastName  string `json:"last_name" binding:"required"`
+	Email     string `json:"email" binding:"required,email"`
+	Phone     string `json:"phone"`
+}
+
 type UpdateUserStatusRequest struct {
 	IsActive bool `json:"is_active"`
 }

@@ -59,3 +59,21 @@ func (r *Repository) UpdateStatus(id string, active bool) error {
 func (r *Repository) DeleteUser(id string) error {
 	return r.db.Delete(&User{}, "id = ?", id).Error
 }
+
+func (r *Repository) GetUserByEmailExceptID(
+	email string,
+	id string,
+) (*User, error) {
+	var user User
+
+	err := r.db.
+		Where("email = ? AND id != ?", email, id).
+		First(&user).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}

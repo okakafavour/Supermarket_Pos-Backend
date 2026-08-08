@@ -6,11 +6,32 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
-
+func RegisterRoutes(
+	router *gin.RouterGroup,
+	db *gorm.DB,
+) {
 	repo := NewRepository(db)
 	service := NewService(repo)
 	handler := NewHandler(service)
+
+	// =========================
+	// Authenticated Profile
+	// =========================
+
+	profile := router.Group("/profile")
+
+	profile.Use(
+		middleware.AuthMiddleware(),
+	)
+
+	profile.PUT(
+		"",
+		handler.UpdateProfile,
+	)
+
+	// =========================
+	// Admin User Management
+	// =========================
 
 	users := router.Group("/users")
 
@@ -19,14 +40,33 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 		middleware.RequireRole("admin"),
 	)
 
-	users.GET("", handler.GetUsers)
-	users.GET("/:id", handler.GetUser)
+	users.GET(
+		"",
+		handler.GetUsers,
+	)
 
-	users.POST("", handler.CreateUser)
+	users.GET(
+		"/:id",
+		handler.GetUser,
+	)
 
-	users.PUT("/:id", handler.UpdateUser)
+	users.POST(
+		"",
+		handler.CreateUser,
+	)
 
-	users.PATCH("/:id/status", handler.UpdateStatus)
+	users.PUT(
+		"/:id",
+		handler.UpdateUser,
+	)
 
-	users.DELETE("/:id", handler.DeleteUser)
+	users.PATCH(
+		"/:id/status",
+		handler.UpdateStatus,
+	)
+
+	users.DELETE(
+		"/:id",
+		handler.DeleteUser,
+	)
 }

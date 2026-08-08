@@ -182,3 +182,47 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 		"message": "User deleted successfully",
 	})
 }
+
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "User not authenticated",
+		})
+
+		return
+	}
+
+	var req UpdateProfileRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	user, err := h.service.UpdateProfile(
+		userID,
+		req,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Profile updated successfully",
+		"data":    user,
+	})
+}

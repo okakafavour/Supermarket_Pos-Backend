@@ -87,3 +87,44 @@ func (s *Service) UpdateStatus(id string, req UpdateUserStatusRequest) error {
 func (s *Service) DeleteUser(id string) error {
 	return s.repo.DeleteUser(id)
 }
+
+func (s *Service) UpdateProfile(
+	id string,
+	req UpdateProfileRequest,
+) (*User, error) {
+	user, err := s.repo.GetUserByID(id)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
+		}
+
+		return nil, err
+	}
+
+	// Check whether another user already has this email.
+	existing, err := s.repo.GetUserByEmailExceptID(
+		req.Email,
+		id,
+	)
+
+	if err == nil && existing != nil {
+		return nil, errors.New("email already exists")
+	}
+
+	if err != nil &&
+		!errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	user.FirstName = req.FirstName
+	user.LastName = req.LastName
+	user.Email = req.Email
+	user.Phone = req.Phone
+
+	if err := s.repo.UpdateUser(user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
