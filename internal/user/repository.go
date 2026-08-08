@@ -77,3 +77,14 @@ func (r *Repository) GetUserByEmailExceptID(
 
 	return &user, nil
 }
+func (r *Repository) GetActiveUsersByRoles(roles ...Role) ([]User, error) {
+	var users []User
+
+	err := r.db.
+		Where("role IN ?", roles).
+		Where("is_active = ?", true).
+		Order("created_at DESC").
+		Find(&users).Error
+
+	return users, err
+}

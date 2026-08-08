@@ -1,12 +1,19 @@
 package notification
 
+import "github.com/okakafavour/supermarket-pos-backend/internal/user"
+
 type Service struct {
-	repo *Repository
+	repo     *Repository
+	userRepo *user.Repository
 }
 
-func NewService(repo *Repository) *Service {
+func NewService(
+	repo *Repository,
+	userRepo *user.Repository,
+) *Service {
 	return &Service{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
 	}
 }
 
