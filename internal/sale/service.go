@@ -8,24 +8,28 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/okakafavour/supermarket-pos-backend/internal/inventory"
+	"github.com/okakafavour/supermarket-pos-backend/internal/notification"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
 )
 
 type Service struct {
-	repo          *Repository
-	productRepo   *product.Repository
-	inventoryRepo *inventory.Repository
+	repo                *Repository
+	productRepo         *product.Repository
+	inventoryRepo       *inventory.Repository
+	notificationService *notification.Service
 }
 
 func NewService(
 	repo *Repository,
 	productRepo *product.Repository,
 	inventoryRepo *inventory.Repository,
+	notificationService *notification.Service,
 ) *Service {
 	return &Service{
-		repo:          repo,
-		productRepo:   productRepo,
-		inventoryRepo: inventoryRepo,
+		repo:                repo,
+		productRepo:         productRepo,
+		inventoryRepo:       inventoryRepo,
+		notificationService: notificationService,
 	}
 }
 
@@ -87,6 +91,7 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 		previousStock := productData.Quantity
 		newStock := previousStock - item.Quantity
 
+		// Update product stock
 		if err := s.productRepo.UpdateQuantity(
 			productData.ID.String(),
 			newStock,
@@ -96,13 +101,64 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 
 		productData.Quantity = newStock
 
-		if newStock <= productData.MinimumStock {
+		// ==========================================
+		// Inventory Notification
+		// ==========================================
+
+		if newStock == 0 {
+
+			warning = fmt.Sprintf(
+				"%s is out of stock",
+				productData.Name,
+			)
+
+			// Create out-of-stock notification
+			if s.notificationService != nil {
+				err := s.notificationService.Create(
+					userID,
+					notification.OutOfStockNotification,
+					"Product Out of Stock",
+					fmt.Sprintf(
+						"%s is now out of stock.",
+						productData.Name,
+					),
+				)
+
+				if err != nil {
+					return nil, "", err
+				}
+			}
+
+		} else if newStock <= productData.MinimumStock {
+
 			warning = fmt.Sprintf(
 				"%s is below minimum stock (%d left)",
 				productData.Name,
 				newStock,
 			)
+
+			// Create low-stock notification
+			if s.notificationService != nil {
+				err := s.notificationService.Create(
+					userID,
+					notification.LowStockNotification,
+					"Low Stock Alert",
+					fmt.Sprintf(
+						"%s is below the minimum stock level. Only %d left.",
+						productData.Name,
+						newStock,
+					),
+				)
+
+				if err != nil {
+					return nil, "", err
+				}
+			}
 		}
+
+		// ==========================================
+		// Inventory Log
+		// ==========================================
 
 		log := &inventory.InventoryLog{
 			ProductID:     productData.ID,
@@ -121,6 +177,7 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 
 	sale.TotalAmount = total - sale.Discount + sale.Tax
 
+	// Create sale
 	if err := s.repo.Create(sale); err != nil {
 		return nil, "", err
 	}

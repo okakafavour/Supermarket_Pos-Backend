@@ -6,7 +6,9 @@ import (
 
 	"github.com/okakafavour/supermarket-pos-backend/internal/inventory"
 	"github.com/okakafavour/supermarket-pos-backend/internal/middleware"
+	"github.com/okakafavour/supermarket-pos-backend/internal/notification"
 	"github.com/okakafavour/supermarket-pos-backend/internal/product"
+	"github.com/okakafavour/supermarket-pos-backend/internal/user"
 )
 
 func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
@@ -15,11 +17,22 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	productRepo := product.NewRepository(db)
 	inventoryRepo := inventory.NewRepository(db)
 
-	// Service
+	// Notification dependencies
+	notificationRepo := notification.NewRepository(db)
+	userRepo := user.NewRepository(db)
+
+	// Notification service
+	notificationService := notification.NewService(
+		notificationRepo,
+		userRepo,
+	)
+
+	// Sale service
 	service := NewService(
 		repo,
 		productRepo,
 		inventoryRepo,
+		notificationService,
 	)
 
 	handler := NewHandler(service)
@@ -64,6 +77,7 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 			handler.Dashboard,
 		)
 
+		// Analytics
 		sales.GET(
 			"/analytics",
 			middleware.RequireRole("admin", "manager"),
