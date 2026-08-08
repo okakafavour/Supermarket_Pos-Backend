@@ -56,9 +56,18 @@ func (s *Service) CreateUser(req CreateUserRequest) error {
 }
 
 func (s *Service) UpdateUser(id string, req UpdateUserRequest) error {
-
 	user, err := s.repo.GetUserByID(id)
 	if err != nil {
+		return err
+	}
+
+	existing, err := s.repo.GetUserByEmail(req.Email)
+
+	if err == nil && existing != nil && existing.ID != user.ID {
+		return errors.New("email already exists")
+	}
+
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
 
