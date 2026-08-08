@@ -1,19 +1,16 @@
 package notification
-package notification
 
-import (
-	"github.com/okakafavour/supermarket-pos-backend/internal/common"
-)
+import "github.com/okakafavour/supermarket-pos-backend/internal/common"
 
 type NotificationType string
 
 const (
-	LowStockNotification  NotificationType = "low_stock"
+	LowStockNotification   NotificationType = "low_stock"
 	OutOfStockNotification NotificationType = "out_of_stock"
-	SaleNotification      NotificationType = "sale"
-	RestockNotification   NotificationType = "restock"
+	SaleNotification       NotificationType = "sale"
+	RestockNotification    NotificationType = "restock"
 	AdjustmentNotification NotificationType = "adjustment"
-	UserNotification      NotificationType = "user"
+	UserNotification       NotificationType = "user"
 )
 
 type Notification struct {
