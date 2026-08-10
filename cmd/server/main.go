@@ -29,8 +29,7 @@ func main() {
 		AllowOrigins: []string{
 			"http://localhost:3000",
 			"http://localhost:5173",
-			// Add your frontend URL here after deployment
-			// "https://your-frontend.vercel.app",
+			"https://supermarket-pos-frontend.vercel.app",
 		},
 		AllowMethods: []string{
 			"GET",
