@@ -31,6 +31,7 @@ func main() {
 			"http://localhost:5173",
 			"https://supermarket-pos-frontend.vercel.app",
 		},
+
 		AllowMethods: []string{
 			"GET",
 			"POST",
@@ -39,17 +40,23 @@ func main() {
 			"DELETE",
 			"OPTIONS",
 		},
+
 		AllowHeaders: []string{
 			"Origin",
 			"Content-Type",
 			"Accept",
 			"Authorization",
 		},
+
 		ExposeHeaders: []string{
 			"Content-Length",
 		},
+
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+
+		OptionsResponseStatusCode: 204,
+
+		MaxAge: 12 * time.Hour,
 	}))
 
 	routes.RegisterRoutes(router, db)
