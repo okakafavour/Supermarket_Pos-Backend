@@ -43,7 +43,14 @@ func generateInvoiceNumber() string {
 	)
 }
 
-func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, error) {
+// =====================================================
+// CREATE SALE
+// =====================================================
+
+func (s *Service) Create(
+	req CreateSaleRequest,
+	userID string,
+) (*Sale, string, error) {
 
 	if len(req.Items) == 0 {
 		return nil, "", errors.New("sale must contain at least one item")
@@ -65,10 +72,21 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 
 	for _, item := range req.Items {
 
-		productData, err := s.productRepo.GetByID(item.ProductID.String())
+		// =================================================
+		// GET PRODUCT
+		// =================================================
+
+		productData, err := s.productRepo.GetByID(
+			item.ProductID.String(),
+		)
+
 		if err != nil {
 			return nil, "", errors.New("product not found")
 		}
+
+		// =================================================
+		// CHECK STOCK
+		// =================================================
 
 		if productData.Quantity < item.Quantity {
 			return nil, "", fmt.Errorf(
@@ -77,21 +95,32 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 			)
 		}
 
-		subtotal := float64(item.Quantity) * productData.SellingPrice
+		// =================================================
+		// CALCULATE SUBTOTAL
+		// =================================================
 
-		sale.Items = append(sale.Items, SaleItem{
-			ProductID: productData.ID,
-			Quantity:  item.Quantity,
-			UnitPrice: productData.SellingPrice,
-			Subtotal:  subtotal,
-		})
+		subtotal := float64(item.Quantity) *
+			productData.SellingPrice
+
+		sale.Items = append(
+			sale.Items,
+			SaleItem{
+				ProductID: productData.ID,
+				Quantity:  item.Quantity,
+				UnitPrice: productData.SellingPrice,
+				Subtotal:  subtotal,
+			},
+		)
 
 		total += subtotal
+
+		// =================================================
+		// UPDATE STOCK
+		// =================================================
 
 		previousStock := productData.Quantity
 		newStock := previousStock - item.Quantity
 
-		// Update product stock
 		if err := s.productRepo.UpdateQuantity(
 			productData.ID.String(),
 			newStock,
@@ -101,9 +130,9 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 
 		productData.Quantity = newStock
 
-		// ==========================================
-		// Inventory Notification
-		// ==========================================
+		// =================================================
+		// INVENTORY NOTIFICATION
+		// =================================================
 
 		if newStock == 0 {
 
@@ -112,12 +141,12 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 				productData.Name,
 			)
 
-			// Create out-of-stock notification
 			if s.notificationService != nil {
+
 				err := s.notificationService.Create(
 					userID,
 					notification.OutOfStockNotification,
-					"Product Out of Stock",
+					"Out of Stock",
 					fmt.Sprintf(
 						"%s is now out of stock.",
 						productData.Name,
@@ -137,14 +166,14 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 				newStock,
 			)
 
-			// Create low-stock notification
 			if s.notificationService != nil {
+
 				err := s.notificationService.Create(
 					userID,
 					notification.LowStockNotification,
 					"Low Stock Alert",
 					fmt.Sprintf(
-						"%s is below the minimum stock level. Only %d left.",
+						"%s is below minimum stock. Only %d left.",
 						productData.Name,
 						newStock,
 					),
@@ -156,9 +185,9 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 			}
 		}
 
-		// ==========================================
-		// Inventory Log
-		// ==========================================
+		// =================================================
+		// INVENTORY LOG
+		// =================================================
 
 		log := &inventory.InventoryLog{
 			ProductID:     productData.ID,
@@ -175,14 +204,31 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 		}
 	}
 
-	sale.TotalAmount = total - sale.Discount + sale.Tax
+	// =====================================================
+	// TOTAL
+	// =====================================================
 
-	// Create sale
+	sale.TotalAmount =
+		total -
+			sale.Discount +
+			sale.Tax
+
+	// =====================================================
+	// CREATE SALE
+	// =====================================================
+
 	if err := s.repo.Create(sale); err != nil {
 		return nil, "", err
 	}
 
-	createdSale, err := s.repo.GetByID(sale.ID.String())
+	// =====================================================
+	// GET CREATED SALE
+	// =====================================================
+
+	createdSale, err := s.repo.GetByID(
+		sale.ID.String(),
+	)
+
 	if err != nil {
 		return nil, "", err
 	}
@@ -190,18 +236,23 @@ func (s *Service) Create(req CreateSaleRequest, userID string) (*Sale, string, e
 	return createdSale, warning, nil
 }
 
+// =====================================================
+// GET ALL SALES
+// =====================================================
+
 func (s *Service) GetAll(
 	filter SaleFilter,
 ) ([]Sale, Pagination, error) {
 
 	sales, total, err := s.repo.GetAll(filter)
+
 	if err != nil {
 		return nil, Pagination{}, err
 	}
 
 	totalPages := 0
 
-	if total > 0 {
+	if total > 0 && filter.Limit > 0 {
 		totalPages = int(
 			(total + int64(filter.Limit) - 1) /
 				int64(filter.Limit),
@@ -218,35 +269,90 @@ func (s *Service) GetAll(
 	return sales, pagination, nil
 }
 
-func (s *Service) GetByID(id string) (*Sale, error) {
+// =====================================================
+// GET SALE BY ID
+// =====================================================
+
+func (s *Service) GetByID(
+	id string,
+) (*Sale, error) {
+
 	return s.repo.GetByID(id)
 }
 
-func (s *Service) Delete(id string) error {
+// =====================================================
+// SOFT DELETE
+// =====================================================
+
+func (s *Service) Delete(
+	id string,
+) error {
+
 	return s.repo.Delete(id)
 }
 
-func (s *Service) Restore(id string) error {
+// =====================================================
+// RESTORE
+// =====================================================
+
+func (s *Service) Restore(
+	id string,
+) error {
+
 	return s.repo.Restore(id)
 }
 
-func (s *Service) PermanentDelete(id string) error {
+// =====================================================
+// PERMANENT DELETE
+// =====================================================
+
+func (s *Service) PermanentDelete(
+	id string,
+) error {
+
 	return s.repo.PermanentDelete(id)
 }
 
+// =====================================================
+// GET DELETED SALES
+// =====================================================
+
 func (s *Service) GetDeleted() ([]Sale, error) {
+
 	return s.repo.GetDeleted()
 }
 
-func parseUUID(id string) (uuid.UUID, error) {
+// =====================================================
+// UUID PARSER
+// =====================================================
+
+func parseUUID(
+	id string,
+) (uuid.UUID, error) {
+
 	return uuid.Parse(id)
 }
 
-// Dashboard
-func (s *Service) GetDashboard() (*DashboardResponse, error) {
+// =====================================================
+// DASHBOARD
+// =====================================================
+
+func (s *Service) GetDashboard() (
+	*DashboardResponse,
+	error,
+) {
+
 	return s.repo.GetDashboard()
 }
 
-func (s *Service) GetAnalytics() (*AnalyticsResponse, error) {
+// =====================================================
+// ANALYTICS
+// =====================================================
+
+func (s *Service) GetAnalytics() (
+	*AnalyticsResponse,
+	error,
+) {
+
 	return s.repo.GetAnalytics()
 }

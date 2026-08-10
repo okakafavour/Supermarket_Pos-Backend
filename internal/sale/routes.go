@@ -21,13 +21,12 @@ func RegisterRoutes(router *gin.RouterGroup, db *gorm.DB) {
 	notificationRepo := notification.NewRepository(db)
 	userRepo := user.NewRepository(db)
 
-	// Notification service
 	notificationService := notification.NewService(
 		notificationRepo,
 		userRepo,
 	)
 
-	// Sale service
+	// Service
 	service := NewService(
 		repo,
 		productRepo,
