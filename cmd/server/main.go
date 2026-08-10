@@ -26,10 +26,12 @@ func main() {
 
 	// CORS Configuration
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:5173",
-			"https://supermarket-pos-frontend.vercel.app",
+		AllowOriginFunc: func(origin string) bool {
+			log.Printf("🌐 CORS Origin: %s", origin)
+
+			return origin == "http://localhost:3000" ||
+				origin == "http://localhost:5173" ||
+				origin == "https://supermarket-pos-frontend.vercel.app"
 		},
 
 		AllowMethods: []string{
