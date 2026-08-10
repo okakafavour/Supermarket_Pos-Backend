@@ -31,7 +31,7 @@ func main() {
 
 			return origin == "http://localhost:3000" ||
 				origin == "http://localhost:5173" ||
-				origin == "https://supermarket-pos-frontend.vercel.app"
+				origin == "https://suparmarket-pos-frontend.vercel.app"
 		},
 
 		AllowMethods: []string{
