@@ -88,3 +88,43 @@ func (r *Repository) GetActiveUsersByRoles(roles ...Role) ([]User, error) {
 
 	return users, err
 }
+
+func (r *Repository) GetDeletedUsers() ([]User, error) {
+	var users []User
+
+	err := r.db.
+		Unscoped().
+		Where("deleted_at IS NOT NULL").
+		Order("deleted_at DESC").
+		Find(&users).Error
+
+	return users, err
+}
+
+func (r *Repository) GetDeletedUserByID(id string) (*User, error) {
+	var user User
+
+	err := r.db.
+		Unscoped().
+		Where("id = ?", id).
+		Where("deleted_at IS NOT NULL").
+		First(&user).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *Repository) RestoreUser(id string) error {
+	return r.db.
+		Unscoped().
+		Model(&User{}).
+		Where("id = ?", id).
+		Where("deleted_at IS NOT NULL").
+		Updates(map[string]interface{}{
+			"deleted_at": nil,
+			"is_active":  true,
+		}).Error
+}

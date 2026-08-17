@@ -41,6 +41,11 @@ func RegisterRoutes(
 	)
 
 	users.GET(
+		"/deleted",
+		handler.GetDeletedUsers,
+	)
+
+	users.GET(
 		"",
 		handler.GetUsers,
 	)
@@ -68,5 +73,10 @@ func RegisterRoutes(
 	users.DELETE(
 		"/:id",
 		handler.DeleteUser,
+	)
+
+	users.POST(
+		"/:id/restore",
+		handler.RestoreUser,
 	)
 }

@@ -226,3 +226,39 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 		"data":    user,
 	})
 }
+
+func (h *Handler) GetDeletedUsers(c *gin.Context) {
+	users, err := h.service.GetDeletedUsers()
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    users,
+	})
+}
+
+func (h *Handler) RestoreUser(c *gin.Context) {
+	userID := c.Param("id")
+
+	if err := h.service.RestoreUser(userID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "User restored successfully",
+	})
+}

@@ -137,3 +137,21 @@ func (s *Service) UpdateProfile(
 
 	return user, nil
 }
+
+func (s *Service) RestoreUser(id string) error {
+	_, err := s.repo.GetDeletedUserByID(id)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("deleted user not found")
+		}
+
+		return err
+	}
+
+	return s.repo.RestoreUser(id)
+}
+
+func (s *Service) GetDeletedUsers() ([]User, error) {
+	return s.repo.GetDeletedUsers()
+}
